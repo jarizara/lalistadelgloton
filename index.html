@@ -235,14 +235,14 @@
   /* ===== Floating add button ===== */
   .fab{
     position:fixed; bottom:24px; left:24px; z-index:40;
-    background:var(--pimenton); color:#fff; border:none; border-radius:99px;
-    padding:15px 22px; font-family:inherit; font-weight:700; font-size:14.5px;
-    display:flex; align-items:center; gap:8px; cursor:pointer;
+    background:var(--pimenton); color:#fff; border:none; border-radius:50%;
+    width:54px; height:54px; padding:0; font-family:inherit; font-weight:700; font-size:14.5px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
     box-shadow:0 10px 28px rgba(193,69,45,0.4);
     transition:transform .15s, box-shadow .15s;
   }
   .fab:hover{transform:translateY(-2px); box-shadow:0 14px 32px rgba(193,69,45,0.45);}
-  .fab svg{width:18px;height:18px;stroke:#fff;}
+  .fab svg{width:22px;height:22px;stroke:#fff;}
 
   /* ===== Chat de recomendaciones ===== */
   .chat-fab{
@@ -260,6 +260,48 @@
     width:10px; height:10px; border-radius:50%; background:var(--pimenton);
     border:2px solid var(--cream);
   }
+
+  /* ===== Feedback / proponer restaurante ===== */
+  .feedback-fab{
+    position:fixed; bottom:90px; left:24px; z-index:40;
+    background:var(--paper); color:var(--ink); border:1.5px solid var(--line);
+    border-radius:50%; width:44px; height:44px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 6px 18px rgba(0,0,0,0.12);
+    transition:transform .15s, box-shadow .15s;
+  }
+  .feedback-fab:hover{transform:translateY(-2px); box-shadow:0 10px 24px rgba(0,0,0,0.16);}
+  .feedback-fab svg{width:19px;height:19px; stroke:var(--ink);}
+  @media (max-width:600px){
+    .feedback-fab{ left:16px; bottom:78px; width:40px; height:40px; }
+  }
+
+  .feedback-field{margin-bottom:14px;}
+  .feedback-field label{
+    display:block; font-size:12px; font-weight:700; color:var(--ink-soft);
+    margin-bottom:5px; text-transform:uppercase; letter-spacing:0.02em;
+  }
+  .feedback-field input, .feedback-field textarea{
+    width:100%; padding:9px 12px; border-radius:9px; border:1.5px solid var(--line);
+    background:var(--cream); font-size:13.5px; font-family:inherit; color:var(--ink);
+    outline:none; transition:border-color .15s; resize:vertical;
+  }
+  .feedback-field input:focus, .feedback-field textarea:focus{border-color:var(--oliva);}
+  .feedback-success{
+    background:var(--pimenton-light); border-radius:10px; padding:12px 14px;
+    font-size:13px; color:var(--pimenton-dark); display:none;
+  }
+  .feedback-list{display:flex; flex-direction:column; gap:10px; max-height:60vh; overflow-y:auto;}
+  .feedback-item{
+    background:var(--cream-2); border-radius:12px; padding:12px 14px;
+    border:1px solid var(--line);
+  }
+  .feedback-item .fi-top{display:flex; justify-content:space-between; gap:10px; margin-bottom:4px;}
+  .feedback-item .fi-name{font-weight:700; font-size:13px; color:var(--ink);}
+  .feedback-item .fi-date{font-size:11px; color:var(--ink-soft); white-space:nowrap;}
+  .feedback-item .fi-msg{font-size:13px; color:var(--ink); line-height:1.5; white-space:pre-wrap;}
+  .feedback-item .fi-contact{font-size:11.5px; color:var(--ink-soft); margin-top:6px;}
+  .feedback-empty{font-size:13px; color:var(--ink-soft); text-align:center; padding:30px 10px;}
 
   .chat-panel{
     position:fixed; bottom:24px; right:24px; z-index:90;
@@ -394,8 +436,6 @@
 
   @media (max-width:600px){
     .field-row{grid-template-columns:1fr;}
-    .fab span{display:none;}
-    .fab{padding:15px; border-radius:50%;}
   }
 </style>
 </head>
@@ -444,11 +484,10 @@
 
 <main id="mainContent"></main>
 
-<footer class="page-footer">Guardado en este navegador · Edición restringida al autor</footer>
+<footer class="page-footer">Guardado en este navegador · Edición restringida al autor · <a href="#" id="feedbackPanelLink" style="color:inherit; text-decoration:underline;">Ver propuestas</a></footer>
 
-<button class="fab" id="fabAdd">
+<button class="fab" id="fabAdd" title="Añadir restaurante">
   <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-  <span>Añadir restaurante</span>
 </button>
 
 <!-- Modal: Add/Edit -->
@@ -557,10 +596,67 @@
   </div>
 </div>
 
+<!-- Botón de feedback / proponer restaurante -->
+<button class="feedback-fab" id="feedbackFab" title="Proponer un restaurante o dejar feedback">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+</button>
+
+<!-- Modal: Proponer restaurante / Feedback -->
+<div class="modal-overlay" id="feedbackOverlay">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-head">
+      <h3>Proponer un sitio o dejar feedback</h3>
+      <button class="modal-close" id="feedbackClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px; color:var(--ink-soft); margin:0 0 16px;">¿Conoces un restaurante que debería estar aquí? ¿Algo que mejorar? Cuéntamelo.</p>
+      <div id="feedbackFormWrap">
+        <div class="feedback-field">
+          <label>Tu nombre (opcional)</label>
+          <input type="text" id="fbName" placeholder="¿Quién propone?">
+        </div>
+        <div class="feedback-field">
+          <label>Mensaje</label>
+          <textarea id="fbMessage" rows="4" placeholder="Ej. Deberíais añadir Fismuler, está genial para grupos…"></textarea>
+        </div>
+        <div class="feedback-field">
+          <label>Contacto (opcional)</label>
+          <input type="text" id="fbContact" placeholder="Email o teléfono, por si quieres respuesta">
+        </div>
+      </div>
+      <div class="feedback-success" id="feedbackSuccess">¡Gracias! Tu mensaje se ha enviado.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="feedbackCancel">Cancelar</button>
+      <button class="btn btn-primary" id="feedbackSubmit">Enviar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Panel de revisión de feedback (solo autor) -->
+<div class="modal-overlay" id="feedbackPanelOverlay">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-head">
+      <h3>Propuestas y feedback recibidos</h3>
+      <button class="modal-close" id="feedbackPanelClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="feedback-list" id="feedbackList">
+        <p class="feedback-empty">Cargando…</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="feedbackPanelRefresh">Actualizar</button>
+      <button class="btn btn-ghost" id="feedbackPanelCloseBtn">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Chat de recomendaciones -->
 <button class="chat-fab" id="chatFab" title="Pregúntame qué restaurante elegir">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
 </button>
+
 
 <div class="chat-panel" id="chatPanel">
   <div class="chat-panel-head">
@@ -761,9 +857,6 @@ const seedData = [
 {cat:"Asia", name:"Soy Kitchen", price:"$$$", cuisine:"Asiática, mediterránea y peruana (fusión)", zone:"Chamberí (Zurbano)",
  highlight:"Fusión asiático-peruano-mediterránea poco habitual — ideal para cenas con sorpresa",
  desc:"Restaurante de cocina fusión que combina influencias asiáticas, mediterráneas y peruanas, con precios medios y carta variada para compartir."},
-{cat:"Asia", name:"Umiko", price:"$$$$", cuisine:"Japonesa de fusión con España", zone:"Centro (Madrazo)",
- highlight:"Sushi fusión con guiños a España: nigiri de socarrat, Pantera Rosa de postre — uno de los mejores de Madrid",
- desc:"De los chefs Juan Alcaide (ex DiverXO) y Pablo Álvaro (ex Kabuki). Cocina japonesa de fusión con toques mediterráneos: nigiri de toro con grasa de wagyu, sam de solomillo ibérico, postres que reinterpretan la Pantera Rosa o el Phoskito. Varios espacios: comedor, barra de sushi y Zona Blanca."},
 {cat:"Asia", name:"Sushi 99 (99 Sushi Bar)", price:"$$$$", cuisine:"Japonesa de fusión, sushi premium", zone:"Varias sedes (Grupo Bambú)",
  highlight:"Sushi de lujo del Grupo Bambú — el primero con estrella Michelin en su categoría en Madrid",
  desc:"Del Grupo Bambú (hermanos de León), referente histórico de sushi premium en Madrid con varias sedes (incluida una en el Bernabéu, KŌ by 99 Sushi Bar). Nigiri de wagyu, trufa y toro. Ambiente moderno y sofisticado, pensado para ocio nocturno selecto."},
@@ -1118,7 +1211,24 @@ const seedData = [
  desc:"Restaurante con larga trayectoria especializado en sacar el máximo partido a los productos de mercado, con raíces vasco-navarras."},
 {cat:"Regional", name:"Taberna Garelos", price:"$$$", cuisine:"Gallega tradicional y casera", zone:"Chamberí / varias sedes",
  highlight:"Cocina gallega tradicional y casera, con varias sedes por Madrid incluida Galería Canalejas",
- desc:"Del cocinero Antonio Couceiro (ex El Refugio de Oleiros, A Coruña, y La Penela, Madrid). Tortilla de Betanzos, empanada gallega, marisco y tarta de queso. Varias sedes: Chamberí, Galería Canalejas y calle del Españoleto."}
+ desc:"Del cocinero Antonio Couceiro (ex El Refugio de Oleiros, A Coruña, y La Penela, Madrid). Tortilla de Betanzos, empanada gallega, marisco y tarta de queso. Varias sedes: Chamberí, Galería Canalejas y calle del Españoleto."},
+
+/* ===== Añadidos a petición del usuario (ronda extra) ===== */
+{cat:"Regional", name:"Alabaster", price:"$$$$", cuisine:"Atlántica/gallega de temporada", zone:"Retiro (Calle Montalbán, 9)",
+ highlight:"Sucursal madrileña del estrellado Alborada de A Coruña — bodega de más de 600 referencias y el mejor producto gallego junto al Retiro",
+ desc:"Del grupo gallego Amicalia Alborada Hostelería, trae a Madrid la filosofía del laureado Alborada coruñés, con Óscar Marcos al frente de sala y bodega. Cocina atlántica de temporada que combina tradición y vanguardia: zamburiñas a la brasa con tuétano, raviolis de cocido gallego, merluza de pincho con pil-pil de limón, y un steak tartar de rubia gallega preparado en mesa. Dos comedores, gastrobar de mesas altas y dos privados para hasta 18 personas cada uno — ideal también para comidas de empresa. Bodega con más de 1.000 referencias."},
+{cat:"De Mercado", name:"Barrutia y el 9", price:"$$$", cuisine:"Taberna tradicional, vasco-madrileña", zone:"Justicia (Calle Santa Teresa, 9)",
+ highlight:"Taberna centenaria (desde 1898) con alma vasca — tortilla de patatas a la trufa de culto y Luis Barrutia recomendando mesa por mesa",
+ desc:"Taberna con más de un siglo de historia en el barrio de Justicia, hoy bajo la batuta de Luis Barrutia ('madrileño en la vida y vasco en los fogones'). Cocina tradicional con toque personal: tortilla de patatas a la trufa (su plato más pedido), callos, torreznos, gazpacho de remolacha, cachopitos de steak. Ambiente familiar y cercano, premiada por su bechamel; conviene reservar porque el local es pequeño y siempre está lleno."},
+{cat:"De Mercado", name:"Cuenllas", price:"$$$$", cuisine:"De mercado, tapas y conservas gourmet", zone:"Moncloa-Aravaca (Ferraz)",
+ highlight:"Tradición y calidad desde 1939 — una de las mejores cartas de vino de Madrid junto a Plaza de España",
+ desc:"Taberna gourmet histórica de Madrid, abierta desde 1939 cerca de Plaza de España. Carta de conservas, canapés, picoteo frío y platos clásicos como los callos a la madrileña, el arroz cremoso de trufa y setas, o el salteado de judías verdes con foie fresco. Salones privados disponibles; muy valorada por su extensa bodega y su trato de toda la vida."},
+{cat:"De Mercado", name:"Caja de Cerillas", price:"$$$", cuisine:"Casa de comidas, cocina tradicional española", zone:"Chamberí (Donoso Cortés)",
+ highlight:"Casa de comidas en miniatura en Chamberí — del Hermano Vinagre Enrique Valentí, con huevos rotos estrellados de culto y solo 8 mesas",
+ desc:"De Enrique Valentí (uno de los Hermanos Vinagre, con más de dos décadas de oficio en Barcelona), su primer proyecto en solitario en Madrid. Local minúsculo de apenas 8 mesas en Donoso Cortés, con alma de casa de comidas y ambiente vintage de tasca moderna, sin modas ni influencias foráneas. Carta corta de sabores reconocibles: huevos estrellados que revuelven en la mesa con gambas al ajillo, judías blancas con almejas, langostinos en gabardina, pollo frito al Jerez, y un flan de textura célebre. Reserva muy disputada desde su apertura; conviene pedirla con antelación."},
+{cat:"Japonesa", name:"Alfonsino", price:"$$$", cuisine:"Japonesa, barra de sushi tachinomi (de pie)", zone:"Chamberí (Cardenal Cisneros)",
+ highlight:"Barra de sushi de pie, sin sillas ni reservas — el nuevo tachinomi de los creadores de Mateo Honten, puro ambiente japonés trasplantado a Chamberí",
+ desc:"De Edo \"Kobayashi\" López (tijuanense de ascendencia nipona, creador también de Mateo Honten) junto a Picho Toledano. Apuesta por el concepto tachinomi: una barra para 15 comensales de pie, sin sillas ni reservas, donde se come con las manos en mesas altas. Nigiris y hand rolls regados con sake en lata, en un formato que despoja al sushi de cualquier ceremonia sin perder calidad. Pensado para ir, socializar con desconocidos en la barra y mantener la conversación fluida — pura cultura de barra japonesa trasladada a Madrid."}
 ];
 
 /* ============ COORDENADAS APROXIMADAS (por zona/calle) ============ */
@@ -1180,7 +1290,6 @@ const RESTAURANT_COORDS = {
   "Don Lay": [40.42568, -3.68041],
   "Royal Crown (China Crown)": [40.41895, -3.70521],
   "Soy Kitchen": [40.43256, -3.69019],
-  "Umiko": [40.42301, -3.6963],
   "Sushi 99 (99 Sushi Bar)": [40.41838, -3.70523],
   "Nakeima": [40.42646, -3.71812],
   "Kabuki": [40.42903, -3.68633],
@@ -1295,6 +1404,11 @@ const RESTAURANT_COORDS = {
   "Adela Besteiro": [40.4102, -3.70475],
   "Asador Pelotari": [40.42869, -3.6789],
   "Taberna Garelos": [40.43968, -3.69961],
+  "Alabaster": [40.41478, -3.68829],
+  "Barrutia y el 9": [40.42634, -3.69585],
+  "Cuenllas": [40.42413, -3.71498],
+  "Caja de Cerillas": [40.43568, -3.70486],
+  "Alfonsino": [40.42938, -3.70423],
 };
 
 /* ============ STATE ============ */
@@ -1538,6 +1652,7 @@ loginOverlay.addEventListener('click', (e)=>{ if(e.target===loginOverlay) closeL
 function attemptLogin(){
   if(loginUser.value === EDITOR_USER && loginPass.value === EDITOR_PASS){
     sessionStorage.setItem(EDITOR_SESSION_KEY, 'true');
+    sessionStorage.setItem(EDITOR_SESSION_KEY + '_creds', btoa(loginUser.value + ':' + loginPass.value));
     loginOverlay.classList.remove('show');
     const action = pendingEditorAction;
     pendingEditorAction = null;
@@ -1669,6 +1784,8 @@ document.addEventListener('keydown', (e)=>{
     if(formOverlay.classList.contains('show')) closeForm();
     if(deleteOverlay.classList.contains('show')) closeDelete();
     if(loginOverlay.classList.contains('show')) closeLogin();
+    if(feedbackOverlay.classList.contains('show')) closeFeedbackForm();
+    if(feedbackPanelOverlay.classList.contains('show')) closeFeedbackPanel();
   }
 });
 
@@ -1726,6 +1843,119 @@ mapToggleBtn.addEventListener('click', ()=>{
     setTimeout(()=>{ if(leafletMap) leafletMap.invalidateSize(); }, 60);
   }
 });
+
+/* ============ FEEDBACK / PROPONER RESTAURANTE ============ */
+const feedbackFab = document.getElementById('feedbackFab');
+const feedbackOverlay = document.getElementById('feedbackOverlay');
+const feedbackClose = document.getElementById('feedbackClose');
+const feedbackCancel = document.getElementById('feedbackCancel');
+const feedbackSubmit = document.getElementById('feedbackSubmit');
+const feedbackFormWrap = document.getElementById('feedbackFormWrap');
+const feedbackSuccess = document.getElementById('feedbackSuccess');
+const fbName = document.getElementById('fbName');
+const fbMessage = document.getElementById('fbMessage');
+const fbContact = document.getElementById('fbContact');
+
+function openFeedbackForm(){
+  fbName.value = ''; fbMessage.value = ''; fbContact.value = '';
+  feedbackFormWrap.style.display = 'block';
+  feedbackSuccess.style.display = 'none';
+  feedbackSubmit.style.display = 'inline-flex';
+  feedbackOverlay.classList.add('show');
+  setTimeout(()=>fbMessage.focus(), 50);
+}
+function closeFeedbackForm(){ feedbackOverlay.classList.remove('show'); }
+feedbackFab.addEventListener('click', openFeedbackForm);
+feedbackClose.addEventListener('click', closeFeedbackForm);
+feedbackCancel.addEventListener('click', closeFeedbackForm);
+feedbackOverlay.addEventListener('click', (e)=>{ if(e.target===feedbackOverlay) closeFeedbackForm(); });
+
+async function submitFeedback(){
+  const message = fbMessage.value.trim();
+  if(!message){
+    fbMessage.focus();
+    return;
+  }
+  feedbackSubmit.disabled = true;
+  feedbackSubmit.textContent = 'Enviando…';
+  try{
+    const response = await fetch('/api/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: fbName.value.trim(),
+        message,
+        contact: fbContact.value.trim()
+      })
+    });
+    if(!response.ok) throw new Error('request failed');
+    feedbackFormWrap.style.display = 'none';
+    feedbackSubmit.style.display = 'none';
+    feedbackSuccess.style.display = 'block';
+    setTimeout(closeFeedbackForm, 1800);
+  }catch(err){
+    console.error(err);
+    alert('No se pudo enviar el mensaje. Inténtalo de nuevo en un momento.');
+  }finally{
+    feedbackSubmit.disabled = false;
+    feedbackSubmit.textContent = 'Enviar';
+  }
+}
+feedbackSubmit.addEventListener('click', submitFeedback);
+
+/* ---- Panel de revisión (solo autor) ---- */
+const feedbackPanelOverlay = document.getElementById('feedbackPanelOverlay');
+const feedbackPanelClose = document.getElementById('feedbackPanelClose');
+const feedbackPanelCloseBtn = document.getElementById('feedbackPanelCloseBtn');
+const feedbackPanelRefresh = document.getElementById('feedbackPanelRefresh');
+const feedbackPanelLink = document.getElementById('feedbackPanelLink');
+const feedbackList = document.getElementById('feedbackList');
+
+function closeFeedbackPanel(){ feedbackPanelOverlay.classList.remove('show'); }
+feedbackPanelClose.addEventListener('click', closeFeedbackPanel);
+feedbackPanelCloseBtn.addEventListener('click', closeFeedbackPanel);
+feedbackPanelOverlay.addEventListener('click', (e)=>{ if(e.target===feedbackPanelOverlay) closeFeedbackPanel(); });
+feedbackPanelRefresh.addEventListener('click', loadFeedbackList);
+
+feedbackPanelLink.addEventListener('click', (e)=>{
+  e.preventDefault();
+  requireEditor(()=>{
+    feedbackPanelOverlay.classList.add('show');
+    loadFeedbackList();
+  });
+});
+
+async function loadFeedbackList(){
+  feedbackList.innerHTML = '<p class="feedback-empty">Cargando…</p>';
+  try{
+    const creds = sessionStorage.getItem(EDITOR_SESSION_KEY + '_creds') || '';
+    const response = await fetch('/api/feedback', {
+      headers: creds ? { 'Authorization': 'Basic ' + creds } : {}
+    });
+    if(!response.ok) throw new Error('request failed');
+    const items = await response.json();
+    if(!items || !items.length){
+      feedbackList.innerHTML = '<p class="feedback-empty">Todavía no hay propuestas ni feedback.</p>';
+      return;
+    }
+    feedbackList.innerHTML = items.map(it=>{
+      const date = it.createdAt ? new Date(it.createdAt).toLocaleString('es-ES', { dateStyle:'medium', timeStyle:'short' }) : '';
+      const name = it.name ? escapeHtml(it.name) : 'Anónimo';
+      const contact = it.contact ? `<p class="fi-contact">Contacto: ${escapeHtml(it.contact)}</p>` : '';
+      return `<div class="feedback-item">
+        <div class="fi-top">
+          <span class="fi-name">${name}</span>
+          <span class="fi-date">${escapeHtml(date)}</span>
+        </div>
+        <p class="fi-msg">${escapeHtml(it.message || '')}</p>
+        ${contact}
+      </div>`;
+    }).join('');
+  }catch(err){
+    console.error(err);
+    feedbackList.innerHTML = '<p class="feedback-empty">No se pudo cargar el feedback. Inténtalo de nuevo.</p>';
+  }
+}
 
 /* ============ CHAT DE RECOMENDACIONES ============ */
 const chatFab = document.getElementById('chatFab');
