@@ -135,6 +135,17 @@
   }
   .empty-state svg{width:48px;height:48px;stroke:var(--line);margin-bottom:14px;}
 
+  .loading-state{
+    text-align:center; padding:90px 20px; color:var(--ink-soft);
+  }
+  .loading-state p{font-size:14px; margin:0 0 16px;}
+  .loading-spinner{
+    width:38px; height:38px; margin:0 auto 18px;
+    border:3.5px solid var(--line); border-top-color:var(--pimenton);
+    border-radius:50%; animation:spin .8s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
   /* category section */
   .category-block{margin-bottom:38px;}
   .category-head{
@@ -699,754 +710,23 @@
 
 <script>
 /* ============ DATA ============ */
-const STORAGE_KEY = 'madrid_restaurantes_v1';
+/* Los datos de restaurantes ahora viven en el servidor (Upstash Redis) y se cargan vía /api/restaurants */
 
-const seedData = [
-{cat:"Alta Cocina", name:"DiverXO", price:"$$$$", cuisine:"Creativa de vanguardia, fusión asiática", zone:"Tetuán (NH Eurobuilding)",
- highlight:"El único 3 estrellas Michelin de Madrid — Dabiz Muñoz al mando, reserva con MESES de antelación 🔥",
- desc:"El restaurante insignia de Dabiz Muñoz, único 3 estrellas Michelin de Madrid y 4º mejor restaurante del mundo (The World's 50 Best 2025). Menú degustación único, 'La cocina de los cerdos voladores': fusión asiática con producto español, montado como lienzos en plato. Experiencia teatral y carísima (~450€/persona). Las reservas se abren el día 1 de cada mes para el mes siguiente."},
-{cat:"Alta Cocina", name:"StreetXO", price:"$$$", cuisine:"Street food asiático y de fusión", zone:"Salamanca (El Corte Inglés Serrano)",
- highlight:"La cara informal y festivalera de Dabiz Muñoz, con barra, cócteles y mucho ruido 🎉",
- desc:"El proyecto más informal de Dabiz Muñoz: barra sin taburetes, cocineros a la vista, comida callejera asiática reinterpretada con producto top. Dumplings, croquetas-nigiri, ramen XO de foie y jabugo, robata de pichón tandoori. Ambiente de fiesta, música alta, no se reservan mesas."},
-{cat:"Alta Cocina", name:"RavioXO", price:"$$$", cuisine:"Pasta y masas de autor, fusión asiática", zone:"Salamanca (El Corte Inglés Castellana)",
- highlight:"\"El lujo de comer tiempo\": Dabiz Muñoz lleva la pasta y los dumplings a otro nivel 🥟",
- desc:"Tercer proyecto del universo XO, con 1 estrella Michelin: la pasta y la masa como hilo conductor, con técnicas de wok y producto exótico (centollo Singapur, gochujang). Menú degustación 'Festival 360º'. Interiorismo de Lázaro Rosa-Violán y coctelería destacada."},
-{cat:"Alta Cocina", name:"Smoked Room", price:"$$$$", cuisine:"Ahumados y brasa, omakase", zone:"Castellana (Hyatt Regency)",
- highlight:"2 estrellas Michelin centradas en el fuego, las brasas y el ahumado — formato omakase íntimo",
- desc:"Proyecto de Dani García liderado por el chef Massimiliano Delle Vedove. Solo dos mesas y una barra japonesa, con dos menús degustación tipo omakase centrados en técnicas de ahumado y carbón: pescados curados, carnes selectas, producto de temporada."},
-{cat:"Alta Cocina", name:"Coque", price:"$$$$", cuisine:"Creativa de autor, raíces y producto", zone:"Chamberí",
- highlight:"2 estrellas Michelin + estrella verde — los hermanos Sandoval llevan la cocina madrileña a otro nivel",
- desc:"Restaurante de los hermanos Sandoval (Mario en cocina, Rafael en sala, Diego en bodega), 1.100 m² con experiencia por etapas: bar inglés, sala de whiskies, bodega y cocina antes de llegar a mesa. El menú 'Madrid' reinterpreta la culinaria de la capital. Apuesta fuerte por fermentados, el huevo como ingrediente fetiche y un laboratorio agrícola propio."},
-{cat:"Alta Cocina", name:"Horcher", price:"$$$$", cuisine:"Centroeuropea (alemana/austriaca) y caza", zone:"Retiro (frente al parque)",
- highlight:"Institución desde 1943 frente al Retiro — caza, Baumkuchen y la elegancia de la vieja Europa",
- desc:"Fundado en 1943 por Otto Horcher (con origen en el Berlín de 1904), hoy dirigido por la 4ª generación familiar. Especialistas en caza (perdiz a la prensa, becada, corzo) y platos centroeuropeos como el rabo de vaca, el stroganoff o el ragoût de bogavante. Postre estrella: el Baumkuchen, único en Madrid. Ambiente clásico, chaqueta recomendada."},
-{cat:"Alta Cocina", name:"Zalacaín", price:"$$$$", cuisine:"Alta cocina vasco-francesa clásica", zone:"El Viso/Chamartín",
- highlight:"El primer 3 estrellas Michelin de España (1987) — historia viva de la gastronomía madrileña",
- desc:"Fundado en 1973, fue el primer restaurante español en lograr 3 estrellas Michelin. Tras un cierre y reapertura en 2021 bajo el Grupo Urrechu, mantiene platos icónicos como el bacalao Tellagorri, las patatas suflé con steak tartar o el solomillo Wellington. Un clásico de chaqueta y corbata reinventado."},
-{cat:"Alta Cocina", name:"Saddle", price:"$$$$", cuisine:"De autor, cocina clásica con técnica actual", zone:"Centro (antiguo local de Jockey)",
- highlight:"1 estrella Michelin en el local mítico de Jockey — elegancia y producto en estado puro",
- desc:"Ocupa el local del legendario Jockey, con 1.600 m² en dos plantas y un gran lucernario. Cocina de corte clásico-sofisticado con bar más informal centrado en producto de calidad. Platos destacados: jarrete para compartir, soufflé, anguila ahumada y pichón."},
-{cat:"Alta Cocina", name:"DSTAGE", price:"$$$$", cuisine:"Creativa, experimental, sin concesiones", zone:"Chueca/Salesas",
- highlight:"2 estrellas Michelin de Diego Guerrero — vanguardia pura, sin cartas ni protocolos",
- desc:"Diego Guerrero (ex Club Allard) abrió este templo de la creatividad sin cartas: solo menús degustación (10, 14, hasta 22 platos). Cocina abierta, ambiente desenfadado con Bob Dylan de fondo. Abajo, BackDSTAgE alberga talleres e I+D culinario."},
-{cat:"Alta Cocina", name:"Estimar", price:"$$$$", cuisine:"Pescados y mariscos a la brasa", zone:"Centro (cerca del Congreso)",
- highlight:"El templo del pescado de Rafa Zafra (ex El Bulli) — producto brutal sin artificios",
- desc:"Sucursal madrileña del Estimar de Barcelona, de Rafa Zafra y la familia Gotanegra (pescaderos de Rosas). Filosofía de máximo 5 ingredientes por plato, género fresco diario sin cámaras frigoríficas. Sin menú degustación: carta con pescado entero a la brasa, gambas rojas y percebes en varias cocciones."},
-{cat:"Alta Cocina", name:"A'Barra", price:"$$$$", cuisine:"De producto, cerdo ibérico Joselito", zone:"Salamanca (Carrera de San Jerónimo)",
- highlight:"1 estrella Michelin nacida de la unión Joselito + La Catedral de Navarra — el jamón como arte",
- desc:"Del grupo Sula (Joselito + La Catedral de Navarra), con el chef Sergio Manzano. Producto premium: jamón ibérico Joselito Vintage, verduras de temporada navarras. Platos emblema: huevo de Mos con jamón y anguila, steak tartar. Cuenta con LA'Barra, cocktail bar con barra de granito de 9 toneladas."},
-{cat:"Alta Cocina", name:"Tse Yang", price:"$$$$", cuisine:"China cantonesa de alta cocina", zone:"Salamanca (Hotel Villa Magna)",
- highlight:"30 años siendo el referente de la alta cocina china en Madrid — pato laqueado de leyenda",
- desc:"Abierto en 1996 por Víctor Chu dentro del Hotel Villa Magna, fue pionero en traer la alta cocina cantonesa a España: dim sum artesanos, pato laqueado pequinés (más de 2 días de preparación), langosta al estilo Sichuán. Bodega con más de 250 referencias, incluidos vinos generosos del sur de España."},
-
-{cat:"TOP Madrid", name:"Sacha", price:"$$$", cuisine:"De producto, Galicia y País Vasco", zone:"Chamartín",
- highlight:"Donde comen los cocineros — Sacha Hormaechea y su mítica 'tortilla vaga' desde 1972",
- desc:"Bistró familiar desde 1972, llevado hoy por Sacha Hormaechea, personaje entrañable de la gastronomía madrileña. Su tortilla vaga (sin dar la vuelta) es objeto de culto y ha inspirado a otros chefs. Cocina de producto gallego-vasco: ostras escabechadas, erizos, raya a la mantequilla negra. Terraza-jardín muy buscada en verano."},
-{cat:"TOP Madrid", name:"Leña", price:"$$$", cuisine:"Brasa y carnes", zone:"Centro (Grupo Dani García)",
- highlight:"El steakhouse de Dani García: brasas, carne madurada y la Burger Bull que todos piden",
- desc:"Tras dejar su 3 estrellas Michelin, Dani García apostó por una cocina más libre centrada en el fuego y la parrilla. Carnes maduradas como protagonistas, ambiente oscuro y elegante tipo club de jazz. Brunch los fines de semana."},
-{cat:"TOP Madrid", name:"Bibo", price:"$$$", cuisine:"Internacional cosmopolita", zone:"Castellana (Grupo Dani García)",
- highlight:"El restaurante más viajero de Dani García: brasería, tapas y steakhouse con alma andaluza",
- desc:"800 m² de ambiente cosmopolita en pleno Paseo de la Castellana, iluminados con miles de bombillas estilo feria de Málaga. Mezcla mediterráneo, asiático y latino. Cuenta con El Coleccionista, una coctelería clandestina escondida tras una puerta secreta."},
-{cat:"TOP Madrid", name:"Lobito de Mar", price:"$$$", cuisine:"Marinera, pescados y arroces", zone:"Salamanca",
- highlight:"El chiringuito urbano de Dani García: atún de almadraba, arroces y mucho ambiente",
- desc:"Marisquería-chiringuito de Dani García desde 2019, con barra informal y salón más formal. Atún salvaje pescado en almadraba, arroces andaluces con alma alicantina. Cocina ininterrumpida todo el día."},
-{cat:"TOP Madrid", name:"Fismuler", price:"$$", cuisine:"Casa de comidas, toques nórdicos", zone:"Chamberí/Malasaña",
- highlight:"Cocina tradicional con aire nórdico — carta que cambia cada día, producto de mercado",
- desc:"De Nino Redruello y Patxi Zumárraga (Grupo La Ancha), con inspiración en la sencillez nórdica. Carpaccio de ternera ahumado, mar y montaña de garbanzos y cigala, cabecero de ibérico con albaricoque. Decoración minimalista, 1 Sol Repsol."},
-{cat:"TOP Madrid", name:"La Ancha", price:"$$", cuisine:"Casa de comidas tradicional", zone:"Zorrilla / Príncipe de Vergara",
- highlight:"Más de 100 años de cocina tradicional madrileña — el mítico Escalope Armando",
- desc:"Fundado en 1919 por la familia Redruello (hoy 4ª generación), es la casa madre de un grupo que incluye Fismuler. Carta que cambia cada día con producto de mercado: tortilla con guisos por encima, callos, y el famoso Escalope Armando, un filete aplastado y agrandado que ya es leyenda."},
-{cat:"TOP Madrid", name:"Lakasa", price:"$$$", cuisine:"De mercado, temporada", zone:"Chamberí",
- highlight:"Cocina de mercado de César Martín — referencia clásica del buen comer sin estridencias",
- desc:"Restaurante de cocina de mercado con producto de temporada, llevado por César Martín y Marina Launay. Abierto desde martes a sábado. Casa madre del proyecto Fokacha, justo enfrente."},
-{cat:"TOP Madrid", name:"Fokacha", price:"$$$", cuisine:"Trattoria italiana", zone:"Chamberí (frente a Lakasa)",
- highlight:"La trattoria italiana de los creadores de Lakasa — horno de leña y pasta fresca diaria",
- desc:"De César Martín y Marina Launay, con horno de piedra traído de Italia. Pasta fresca del día (cacio e pepe con codorniz, boloñesa de cordero lechal), porchetta de cochinillo y pizzas de masa madre con mozzarella de búfala. Buena selección de vinos italianos por copa."},
-{cat:"TOP Madrid", name:"Filandón", price:"$$$", cuisine:"Parrilla, pescados y mariscos", zone:"Monte de El Pardo",
- highlight:"El asador en plena naturaleza que más factura de Madrid — pescado y carne a la brasa en 7.000 m²",
- desc:"Del grupo Pescaderías Coruñesas, en pleno Monte de El Pardo. Más de 7.000 m² de espacios verdes, comedores y terrazas con capacidad para 400 personas. Especialistas en parrilla de pescado y marisco, también buenas carnes. Cocina ininterrumpida, ideal para comidas de empresa con horarios flexibles."},
-{cat:"TOP Madrid", name:"Desde 1911", price:"$$$$", cuisine:"Pescado y marisco de mercado", zone:"Centro",
- highlight:"La carta cambia cada día según la pesca — homenaje de Pescaderías Coruñesas a su legado familiar",
- desc:"Homenaje de la familia García Azpíroz (Pescaderías Coruñesas) a su tradición pescadera. Sin carta fija: cada día se elige el mejor producto llegado de lonja y se monta el menú. Decoración de inspiración nórdica con patio ajardinado."},
-{cat:"TOP Madrid", name:"La Buena Vida", price:"$$$$", cuisine:"De producto y temporada, caza", zone:"Las Salesas",
- highlight:"Caza de temporada al máximo nivel — becada, cerceta y una tarta de queso de las mejores de Madrid",
- desc:"De Carlos Torres y Elisa Rodríguez. Producto excepcional tratado con sencillez: ostras Guillardeau, gambas rojas, bacalao negro. En otoño brilla con su dominio de la caza (cerceta, grouse, becada) y guisos de níscalos. Local sobrio con pocas mesas."},
-{cat:"TOP Madrid", name:"El Pescador", price:"$$$", cuisine:"Marisquería", zone:"Salamanca",
- highlight:"Marisquería clásica del grupo Pescaderías Coruñesas — producto salvaje fresco todos los días",
- desc:"Parte del grupo Pescaderías Coruñesas (igual que O'Pazo, Filandón y Desde 1911). Pescados y mariscos salvajes abastecidos a diario. Barra y terraza con horario ininterrumpido."},
-{cat:"TOP Madrid", name:"O'Pazo", price:"$$$", cuisine:"Marisquería", zone:"Chamberí",
- highlight:"Otra de las marisquerías de referencia de Pescaderías Coruñesas — clásico seguro",
- desc:"Marisquería del mismo grupo que El Pescador y Filandón, con producto salvaje de la misma central de compras. Servicio de aparcacoches y ambiente clásico de toda la vida."},
-{cat:"TOP Madrid", name:"El Paraguas", price:"$$$", cuisine:"Asturiana de autor", zone:"Salamanca (Grupo Paraguas)",
- highlight:"El origen del Grupo Paraguas — fabes con centollo y cachopo en versión elegante",
- desc:"Primer restaurante de Sandro Silva y Marta Seco (2004), germen del Grupo Paraguas. Referente de cocina asturiana de calidad: verdinas con perdiz, colmenillas rellenas de foie, cachopo de solomillo. Ambiente sofisticado con varios reservados."},
-{cat:"TOP Madrid", name:"Quintín (Ultramarinos Quintín)", price:"$$$", cuisine:"De mercado y ultramarinos asturiano", zone:"Salamanca (frente a El Paraguas)",
- highlight:"Ultramarinos gourmet + restaurante — desayunos, charcutería y producto para llevar",
- desc:"Del Grupo Paraguas, recrea un colmado tradicional en dos plantas: zona de tienda (charcutería, frutería, panadería) y restaurante con carta de guisos asturianos, pastas y pizzas. Buenos desayunos."},
-{cat:"TOP Madrid", name:"Barracuda Mx", price:"$$$", cuisine:"Mexicana del Pacífico", zone:"Jerónimos (junto al Retiro)",
- highlight:"Cocina mexicana de pescado del chef Roberto Ruiz (pionero del mexicano con estrella en Europa)",
- desc:"Del chef Roberto Ruiz, primer cocinero en lograr una estrella Michelin para un restaurante mexicano en Europa (el desaparecido Punto MX). Aquí, cocina más ligera del Pacífico mexicano: ceviches, guacamoles, tacos al pastor y la imprescindible lubina a la talla."},
-{cat:"TOP Madrid", name:"Carbón Negro (hoy Carbón)", price:"$$$", cuisine:"Brasa y producto de temporada", zone:"Salamanca",
- highlight:"El asador de referencia del Barrio de Salamanca — todo a la brasa, de la verdura a la chuleta",
- desc:"Renombrado simplemente 'Carbón'. Cocina de producto de temporada cocinado a la brasa por Gonzalo Armas (ex Filandón): buñuelos de Idiazábal, lenguados y rapes a la brasa, cocochas al pilpil. Local tipo casa de campo con grandes ventanales."},
-{cat:"TOP Madrid", name:"Luzi Bombón", price:"$$$", cuisine:"Internacional, brasserie", zone:"Chamberí (Castellana)",
- highlight:"Brasserie con más de 10 años de éxito — carnes, pescados y música en vivo los findes",
- desc:"Del grupo Tragaluz (Barcelona). Brasserie de casi 400 m² con carta ecléctica: carnes y pescados a la brasa, ceviches, ostras. Música en vivo jueves a sábado y coctelería con buen ambiente."},
-{cat:"TOP Madrid", name:"Maruca (La Maruca)", price:"$$", cuisine:"Cántabra, pescado y marisco", zone:"Velázquez / Castellana",
- highlight:"Cocina cántabra honesta a precios razonables — la mejor tortilla y la tarta de queso Cañadío",
- desc:"Del grupo Cañadío (Paco Quirós y Carlos Crespo), trae a Madrid el sabor de Santander: merluza de rula, rabas, anchoas del Cantábrico y la legendaria tarta de queso (receta de 1981). Varias sedes en la ciudad."},
-{cat:"TOP Madrid", name:"La Primera", price:"$$$", cuisine:"Cántabra, cocina del norte", zone:"Gran Vía (Grupo Cañadío)",
- highlight:"Cocina cántabra elevada en pleno Gran Vía — uno de los mejores postres de España según muchos",
- desc:"Del grupo Cañadío, en el histórico edificio Grassy de Gran Vía 1. Clásicos cántabros con un punto de innovación: merluza meunière de 1981, jarrete de cerdo, salmorejo. Su tarta de queso está considerada una de las mejores de España."},
-{cat:"TOP Madrid", name:"Gran Café Sandanter", price:"$$", cuisine:"Cafetería-restaurante", zone:"Glorieta de Alonso Martínez",
- highlight:"La mítica Cafetería Santander reabierta — café, brunch y formato continuo desde 2020",
- desc:"Recuperación por el Grupo Cañadío de la histórica Cafetería Santander (cerrada tras 52 años en 2019), con interiorismo inspirado en los años 70. Formato cafetería con horario continuado y restaurante."},
-{cat:"TOP Madrid", name:"La Bien Aparecida", price:"$$$$", cuisine:"Cántabra de autor", zone:"Madrid centro (Grupo Cañadío)",
- highlight:"La apuesta más gastronómica del Grupo Cañadío — foie gras y verduras al nivel de los grandes",
- desc:"El restaurante más ambicioso del Grupo Cañadío, con el chef José de Dios (formado con Michel Bras) liderando una propuesta de alta cocina con base cántabra: foie gras del mismo proveedor que Bras, verduras autóctonas y exóticas tratadas con mimo."},
-{cat:"TOP Madrid", name:"Charrúa", price:"$$$$", cuisine:"Parrilla uruguaya/argentina", zone:"Justicia (Conde de Xiquena)",
- highlight:"El templo carnívoro de origen uruguayo — carnes de medio mundo a la parrilla a la vista",
- desc:"Fundado por un gallego y un uruguayo, ofrece carnes de Argentina, Uruguay, Australia, EEUU, Alemania y España, todas a la parrilla a la vista del comensal. Decoración cálida que evoca las haciendas uruguayas. Carta de vinos amplia, especialmente de Rioja y Uruguay."},
-{cat:"TOP Madrid", name:"El Qüenco de Pepa", price:"$$$", cuisine:"Tradicional, cocina con huerta propia", zone:"Tetuán (cerca NH Eurobuilding)",
- highlight:"Clásico de Pepa Muñoz con más de 25 años — cocina tradicional con verduras de su propia huerta",
- desc:"Restaurante de la chef Pepa Muñoz, con más de 25 años de historia. Cocina tradicional sin estridencias: pescado, carne, arroces y verduras de su propia huerta. Decoración sencilla en blanco, muy luminoso. Punto de encuentro habitual de rostros conocidos."},
-{cat:"TOP Madrid", name:"Lana", price:"$$$$", cuisine:"Parrilla argentina premium", zone:"Ponzano",
- highlight:"Considerado entre los mejores steakhouses del mundo — carne argentina de primer nivel",
- desc:"Parrilla argentina de gran nivel en la calle Ponzano, consistentemente listada entre los mejores asadores del mundo. Cortes premium con tradición argentina: ribeye, chuletas de buey. Ambiente smart-casual."},
-{cat:"TOP Madrid", name:"Casa Dani", price:"$$", cuisine:"Tortilla de patata, cocina de mercado", zone:"Mercado de la Paz / Ayala",
- highlight:"La tortilla de patata más premiada de Madrid — clásico de barra sin pretensiones",
- desc:"Bar tradicional famoso por su tortilla de patata, premio incluido. Ambiente casero y bullicioso, barra para comer de pie. Además de la tortilla, destacan la paella y el rabo de toro."},
-{cat:"TOP Madrid", name:"La Tasquita de Enfrente", price:"$$$$", cuisine:"De mercado, alta cocina sin estrella", zone:"Centro (Calle Ballesta)",
- highlight:"De los templos del producto en Madrid — Juanjo López y su carta sin carta",
- desc:"Referencia histórica de la cocina de producto en Madrid, llevada por Juanjo López. Pequeño, íntimo, sin carta fija: el chef recomienda según mercado. Frecuentemente citado junto a Sacha y La Buena Vida como cumbre de la cocina de producto madrileña."},
-{cat:"TOP Madrid", name:"Triciclo", price:"$$$", cuisine:"De autor, viajera con raíces tradicionales", zone:"Barrio de las Letras",
- highlight:"Cocina informal de gran nivel desde 2013 — sabores de siempre y del mundo, sostenibilidad",
- desc:"De los chefs Javier Goya, Javier Mayor y David Alfonso desde 2013. Combina cocina tradicional con sabores de otros países descubiertos en sus viajes, en un local minimalista con barra, reservado y comedor principal. Apuesta por la sostenibilidad y el producto de proximidad."},
-{cat:"TOP Madrid", name:"Bascoat", price:"$$$", cuisine:"Vasca, parrilla y producto", zone:"Paseo de la Habana",
- highlight:"El nuevo proyecto de los creadores de Arima — tradición vasca llevada un paso más allá",
- desc:"Segundo proyecto de Nagore Irazuegi y Rodrigo García, con el mismo cuidado en proveedores (Formaje, Agur, Grate) pero carta distinta, centrada en parrilla, producto y salsas tradicionales vascas."},
-{cat:"TOP Madrid", name:"Treze", price:"$$$", cuisine:"Caza y cocina de mercado", zone:"Salamanca (General Pardiñas)",
- highlight:"El mejor sitio de Madrid para comer caza — torreznos de categoría y cocido de caza mensual",
- desc:"Referente en cocina cinegética (ciervo, jabalí, paloma, faisán) y cocina de mercado en general, con el chef Saúl Sanz. Torreznos, ensaladilla Elena vs Saúl, mollejas y un cocido de caza el último viernes de cada mes. Zona de bar más informal y comedor para sentarse con calma."},
-{cat:"TOP Madrid", name:"La Parra", price:"$$$", cuisine:"Anglo-andaluza, tradicional", zone:"Chamberí",
- highlight:"Desde 1983, mezcla de taberna andaluza y club inglés — steak tartar y salmorejo de toda la vida",
- desc:"Con origen en el Málaga de los años 50 y paso por Londres (frecuentado por los Rolling Stones), se instaló en Madrid en 1983. Cocina de producto tradicional con fondo anglo-andaluz: steak tartar, salmorejo, apple crumble."},
-{cat:"TOP Madrid", name:"Roostiq", price:"$$$", cuisine:"Brasa y horno de leña, producto ecológico", zone:"Chueca",
- highlight:"Pollo y verduras de su propia granja ecológica en Ávila — torreznos y pizzas de las mejores de Madrid",
- desc:"Filosofía 'del campo a la mesa': cría sus propios pollos y cerdos de bellota y cultiva sus verduras en una finca en Ávila. Todo cocinado a la brasa y horno de leña napolitano. Torreznos, pizzas y pollo ecológico son los grandes hits."},
-{cat:"TOP Madrid", name:"Cilindro", price:"$$", cuisine:"Fusión peruano-asturiana", zone:"Salamanca (Don Ramón de la Cruz)",
- highlight:"Fusión peruana y asturiana muy original — de los mismos creadores de Ronda 14",
- desc:"De Mario Céspedes y Conchi Álvarez (también detrás de Ronda 14). Cocina criolla peruana con guiños asturianos: pulpo con guiso de olluco, callos rachi al cilindro con morcilla, rabo de toro en torto de maíz. Buena relación calidad-precio."},
-{cat:"TOP Madrid", name:"Ronda 14", price:"$$", cuisine:"Peruana", zone:"General Oráa",
- highlight:"El primer restaurante peruano de Mario Céspedes en Madrid — diez años de éxito",
- desc:"Restaurante original de Mario Céspedes y Conchi Álvarez, con el que comenzó su andadura peruana en Madrid antes de Cilindro. Cocina peruana clásica y de fusión: causas, ceviches, anticuchos."},
-{cat:"TOP Madrid", name:"Taberna Pedraza", price:"$$", cuisine:"Tapeo tradicional", zone:"Calle Ibiza",
- highlight:"Una de las tabernas de referencia de la zona de Ibiza, junto a Arzábal y Laredo",
- desc:"Parte de la 'milla del tapeo' de la calle Ibiza, junto a Arzábal y Taberna Laredo. Tapeo tradicional de calidad en un ambiente castizo."},
-{cat:"TOP Madrid", name:"Taberna Laredo", price:"$$$", cuisine:"De mercado, pescado y marisco", zone:"Calle Ibiza",
- highlight:"De un pequeño bar familiar a referente gastronómico — arroces y pescado de altura",
- desc:"Empezó como un pequeño bar llamado Mitulo con los hermanos David y Miguel al frente; hoy es de los templos gastronómicos de la calle Ibiza. Ensalada de vieiras, arroz negro con almejas, ventresca de atún. Carta extensa con tartar de tomate, anchoas y pisto manchego."},
-{cat:"TOP Madrid", name:"Ovillo", price:"$$$$", cuisine:"Tradicional viajada, creativa", zone:"Prosperidad",
- highlight:"Cocina con conciencia social en una antigua fábrica de marroquinería — Mejores Callos del Mundo 2022",
- desc:"Del chef Javier Muñoz Calero, en una antigua nave industrial de 550 m². Proyecto vinculado a la Fundación Raíces (inserción laboral de jóvenes vulnerables). Menús degustación (Ovillo, Madeja, Tirar del hilo) con sabores vasco, catalán, suizo y tailandés. Sus callos con montgetas fueron premiados como los mejores del mundo en 2022."},
-{cat:"TOP Madrid", name:"Arzábal", price:"$$$", cuisine:"Taberna castiza contemporánea", zone:"Retiro",
- highlight:"La taberna castiza por excelencia frente al Retiro — manteca casera y producto de vitrina",
- desc:"De Iván Morales y Álvaro Castellanos desde 2009. Materia prima de calidad (embutidos, conservas, pescados a la brasa) en formato taberna animada. Famoso por la manteca casera que sirven con el pan. Tiene también puesto en el Mercado de San Miguel."},
-{cat:"TOP Madrid", name:"Piantao", price:"$$$", cuisine:"Parrilla argentina contemporánea", zone:"Madrid",
- highlight:"Parrilla argentina con personalidad propia y dominio de las brasas",
- desc:"Concepto de parrilla argentina contemporánea, especializado en técnicas de fuego con producto de temporada. Personalidad marcada y equilibrio entre tradición y técnica actual."},
-{cat:"TOP Madrid", name:"El Señor Martín", price:"$$$", cuisine:"Pescado y brasas", zone:"Detrás de la Audiencia Nacional",
- highlight:"Pescado de mercado a la brasa sin fusiones raras — producto puro y muy buen precio-calidad",
- desc:"Restaurante de pescados y brasas con tres ambientes: barra de picoteo, mesas altas y comedor más íntimo con reservado. Ensaladilla marinera, zamburiñas, langostinos y pescado entero a la brasa. Reconocido como Mejor Restaurante Tradicional de Madrid por Guía Metrópoli."},
-
-{cat:"Asia", name:"Kappo Sushi", price:"$$$$", cuisine:"Japonesa tradicional, omakase", zone:"Bretón de los Herreros / Ríos Rosas",
- highlight:"El omakase más purista de Madrid — el chef Mario Payán cocina delante de ti",
- desc:"Cocina kappo (\"cocinar\") tradicional japonesa con menú omakase único, sin carta. Barra hecha a medida con 12-20 plazas. Maduraciones propias de pescado de hasta 26 días. Whisky club con Macallan y Suntory."},
-{cat:"Asia", name:"Pilar Akaneya", price:"$$$$", cuisine:"Sumibiyaki japonés, wagyu", zone:"Chamberí (Espronceda)",
- highlight:"El templo del Kobe Beef en Madrid — sumibiyaki (brasa de carbón japonesa) con producto exclusivo",
- desc:"Primer restaurante fuera de Japón en ofrecer el Crown Melon (el melón más caro del mundo) y uno de los tres primeros de España en servir Kobe Beef auténtico. Estética de Kioto clásico, ritual de bienvenida con kimono. Solo wagyu premium, sin opciones vegetarianas."},
-{cat:"Asia", name:"Don Lay", price:"$$$", cuisine:"China cantonesa de alta cocina", zone:"Salamanca (Castelló)",
- highlight:"Cocina cantonesa de verdad, sin rollitos genéricos — dim sum artesanos y pato laqueado de 24h",
- desc:"De la empresaria Nieves Ye, reabierto en 2019 tras el cierre del Don Lay original (2002-2015). Dim sum hechos a mano, pato laqueado con más de 24h de elaboración, cócteles inspirados en el horóscopo chino. Más de 350 referencias de vino, incluidos vinos chinos."},
-{cat:"Asia", name:"Royal Crown (China Crown)", price:"$$$", cuisine:"China imperial", zone:"Madrid",
- highlight:"Cocina imperial china desde 1981 — pato crujiente como gran especialidad",
- desc:"Restaurante chino de larga tradición (abierto en 1981), de ambiente lujoso y cómodo. Especialidad en pato crujiente, dim sum y arroces salvajes con marisco. Referencia para quienes buscan algo por encima del chino genérico."},
-{cat:"Asia", name:"Soy Kitchen", price:"$$$", cuisine:"Asiática, mediterránea y peruana (fusión)", zone:"Chamberí (Zurbano)",
- highlight:"Fusión asiático-peruano-mediterránea poco habitual — ideal para cenas con sorpresa",
- desc:"Restaurante de cocina fusión que combina influencias asiáticas, mediterráneas y peruanas, con precios medios y carta variada para compartir."},
-{cat:"Asia", name:"Sushi 99 (99 Sushi Bar)", price:"$$$$", cuisine:"Japonesa de fusión, sushi premium", zone:"Varias sedes (Grupo Bambú)",
- highlight:"Sushi de lujo del Grupo Bambú — el primero con estrella Michelin en su categoría en Madrid",
- desc:"Del Grupo Bambú (hermanos de León), referente histórico de sushi premium en Madrid con varias sedes (incluida una en el Bernabéu, KŌ by 99 Sushi Bar). Nigiri de wagyu, trufa y toro. Ambiente moderno y sofisticado, pensado para ocio nocturno selecto."},
-{cat:"Asia", name:"Nakeima", price:"$$$", cuisine:"Fusión japo-peruana-vasca, dumplings", zone:"Argüelles",
- highlight:"Sin carta, solo pizarra — fusión japo-peruana sorprendente con cocineros de DiverXO y Kabuki",
- desc:"Dumpling bar sin carta fija (pizarra diaria), con chefs venidos de Kabuki, DiverXO y Nikkei 225. Solo 20 comensales por servicio, sin reservas. Dumplings de rabo de toro, ceviche con influencia bilbaína, ramen seco con yema de huevo."},
-{cat:"Asia", name:"Kabuki", price:"$$$$", cuisine:"Japonesa-mediterránea de fusión", zone:"Tetuán (Lagasca, sede original)",
- highlight:"El origen de la fusión japo-mediterránea en España — Ricardo Sanz, pionero absoluto",
- desc:"Restaurante original (año 2000) de Ricardo Sanz, el chef español pionero en cocina japonesa y primer español con estrella Michelin en esta categoría (con Kabuki Wellington). Trilogía de nigiris icónica: pez mantequilla con trufa, huevo de codorniz y hamburguesa."},
-{cat:"Asia", name:"Ikigai", price:"$$$$", cuisine:"Japonesa-francesa-española de fusión", zone:"Flor Baja / Velázquez",
- highlight:"Fusión japonesa con alma francesa y española — nigiris de autor y mucha creatividad",
- desc:"Del chef Yong Wu Nagahira (raíces chino-japonesas, nacido en París). Fusiona técnica japonesa con producto español y toques franceses: tartar de toro con trufa, gyoza de sobrasada, nigiri de wagyu A5. Dos sedes en Madrid (Flor Baja y Velázquez)."},
-
-{cat:"Ambiente", name:"Amazónico", price:"$$$$", cuisine:"Fusión brasileña-latina, selva", zone:"Salamanca (Grupo Paraguas)",
- highlight:"El restaurante selva de Madrid — ambiente espectacular y cocina latina-asiática-mediterránea",
- desc:"Del Grupo Paraguas, recrea un espacio selvático con vegetación frondosa. Cocina fusión con sabores brasileños, criollos y argentinos: T-Bone de Black Angus, picantón a la brasa estilo caipira. Más sobre el ambiente y el espectáculo que sobre la cocina pura, pero efectivo para una noche especial."},
-{cat:"Ambiente", name:"Aarde", price:"$$$$", cuisine:"Inspiración africana, vegetal", zone:"Plaza de la Independencia (Puerta de Alcalá)",
- highlight:"Inspiración africana y mucho vegetal frente a la Puerta de Alcalá — terraza espectacular",
- desc:"Sexto restaurante del Grupo Paraguas, con decoración de inspiración africana (esparto, bambú, cerámica) y gran protagonismo de las verduras a la brasa, cereales y pescados del Estrecho. Lasaña de chingulugulu (seta africana) y jollof de carabineros son los platos destacados."},
-{cat:"Ambiente", name:"Ten con Ten", price:"$$$$", cuisine:"Cosmopolita mediterránea", zone:"Salamanca (Grupo Paraguas)",
- highlight:"Uno de los clásicos del Grupo Paraguas desde 2011 — ambiente animado y cocina cosmopolita segura",
- desc:"Segundo restaurante del Grupo Paraguas (2011), con cocina cosmopolita mediterránea pensada para gustar a todo el mundo. Ambiente animado, ideal para grupos."},
-{cat:"Ambiente", name:"Salvaje", price:"$$$$", cuisine:"Japonesa de fusión latina, show", zone:"Hotel Bless (Velázquez)",
- highlight:"Cena con espectáculo: sushi latino, robata, DJ y bailarinas — el restaurante-fiesta de Madrid",
- desc:"Llegado de Panamá y Bogotá, fusiona gastronomía japonesa (80%) con toques latinos: nigiris, sashimis, robata de carne y pescado. Por la noche el servicio se convierte en espectáculo con baile y música alta. Pensado para la experiencia más que para la calma gastronómica."},
-{cat:"Ambiente", name:"La Fonda Lironda (hoy La Fonda Bistró)", price:"$$$", cuisine:"Tradicional con toques contemporáneos", zone:"Génova (Grupo Carbón)",
- highlight:"Cocina tradicional con sobremesa animada y mucho ambiente — del Grupo Carbón",
- desc:"Del Grupo Carbón Negro, con interiorismo de Cousi inspirado en antiguas fondas y hoteles. Brasas y horno de carbón para una cocina tradicional con toques actuales. Ahora evolucionado a 'La Fonda Bistró', con foco en el ritual del bistec."},
-{cat:"Ambiente", name:"Pólvora", price:"$$$", cuisine:"Fusión mediterránea-asiática-latina", zone:"Salamanca (Juan Bravo)",
- highlight:"Fusión arriesgada de México, Cuba, Perú, India y Argentina en clave moderna — del Grupo Vespok",
- desc:"Del grupo Vespok, con los chefs Alfredo González y Sergio Sanz. Fusiona producto nacional con técnicas mediterráneas, latinoamericanas y asiáticas (picante, brasas, kimchi, yuzu). Patio ajardinado y reservado para eventos."},
-{cat:"Ambiente", name:"Fanático", price:"$$$", cuisine:"Mediterránea española con show", zone:"Castellana (Grupo Carbón/Larrumba)",
- highlight:"El restaurante del elefante gigante — cena con espectáculo en vivo todas las noches",
- desc:"Del Grupo Larrumba/Carbón, con un gran elefante equilibrista como elemento central del comedor. Platos terminados en mesa (escalope, gambas al vapor, ensalada César in situ) y espectáculos rotativos (Vendetta los jueves, Masaka Africana los domingos). De día, comidas de negocios; de noche, fiesta hasta la madrugada."},
-{cat:"Ambiente", name:"Sinsombrero", price:"$$$", cuisine:"Pendiente de completar", zone:"Madrid",
- highlight:"Pendiente — añade aquí tu propia descripción cuando lo visites",
- desc:"No encontré suficiente información fiable sobre este restaurante en mi búsqueda. Edítalo tú mismo con los datos que tengas, o pídeme que lo investigue en una conversación nueva."},
-
-/* ===== Nuevos restaurantes de La Gastrolista (añadidos en 2ª tanda) ===== */
-{cat:"De Autor", name:"Deessa", price:"$$$$", cuisine:"Mediterránea de autor, Quique Dacosta", zone:"Mandarin Oriental Ritz",
- highlight:"2 estrellas Michelin de Quique Dacosta dentro del Ritz — vanguardia valenciana con producto madrileño",
- desc:"Restaurante insignia de Quique Dacosta en Madrid, dentro del Mandarin Oriental Ritz. Dos menús degustación (Histórico y Contemporáneo) con alma mediterránea y producto de proximidad. Comedor con vistas al jardín del Ritz, y un privado llamado Condesa Masslov en homenaje a Mata Hari."},
-{cat:"De Autor", name:"OSA", price:"$$$$", cuisine:"De autor, caza y casquería", zone:"Colonia del Manzanares",
- highlight:"1 estrella Michelin en un chalet con jardín — de los chefs de Mugaritz, menús técnicos y atrevidos",
- desc:"De los chefs Jorge Muñoz y Sara Peral (ex Mugaritz), en un chalet con jardín y solo 20 plazas. Menús de temporada muy técnicos con embutidos, casquería, caza y pescados de río. Una de las aperturas más comentadas de 2023."},
-{cat:"De Autor", name:"EMi", price:"$$$$", cuisine:"Nórdica-asiática de autor", zone:"Chamberí",
- highlight:"Estrella Michelin en tiempo récord (4 meses) — fusión nórdica-asiática de un chef formado en Noma y Atomix",
- desc:"Del chef Rubén Hernández Mosquero (pasado por Noma, Minibar, Atomix y Azurmendi). Barra de alta gastronomía para 12 comensales con la cocina totalmente abierta. Cocina técnica que cruza la Nueva Cocina Nórdica con influencias japonesas y coreanas, con guiños a Extremadura. Nombre homenaje a su hermano fallecido."},
-{cat:"De Autor", name:"Paco Roncero (Paco Roncero Restaurante)", price:"$$$$", cuisine:"Vanguardia española", zone:"Casino de Madrid (Alcalá)",
- highlight:"2 estrellas Michelin en la última planta del histórico Casino de Madrid — vanguardia con raíces madrileñas",
- desc:"Antes 'La Terraza del Casino', hoy bajo el nombre del propio chef. Vanguardia culinaria española con interiorismo de Jaime Hayón. Menús que dialogan entre el Madrid de siempre y el de hoy. Terraza solo en temporada estival, con magníficas vistas."},
-{cat:"De Autor", name:"Montia", price:"$$$$", cuisine:"De autor, producto silvestre de la Sierra", zone:"San Lorenzo de El Escorial",
- highlight:"1 estrella Michelin — cocina salvaje con recolección directa en la Sierra de Guadarrama",
- desc:"Del chef Daniel Ochoa, que se define como agricultor y recolector. 'Cocina salvaje' con productores de la Sierra de Madrid: callos de los mejores de la zona, pepitoria de níscalos y erizos. Recuperó su estrella tras un incendio en 2021."},
-{cat:"De Autor", name:"Gaytán", price:"$$$$", cuisine:"De autor, Javier Aranda", zone:"Príncipe de Vergara",
- highlight:"1 estrella Michelin de Javier Aranda — cocina de vanguardia con cocina oval abierta a la sala",
- desc:"Del chef Javier Aranda, nombrado en homenaje a su abuelo. Menús degustación (Inaurem, Javier Aranda, Gran Menú) con plato preparado ante el cliente. Mesas de roble macizo y estética futurista."},
-{cat:"De Autor", name:"El Invernadero", price:"$$$$", cuisine:"Alta cocina vegetal, gastrobotánica", zone:"Ponzano",
- highlight:"1 estrella Michelin + estrella verde — el templo de la cocina 100% vegetal de Rodrigo de la Calle",
- desc:"Del chef Rodrigo de la Calle, uno de los padres de la 'gastrobotánica'. Menús Vegetalia (vegetariano/vegano) y Gastrobotánica (con opción de carne/pescado/marisco). Las hortalizas, flores y hierbas son siempre el hilo conductor."},
-{cat:"De Autor", name:"Cebo", price:"$$$$", cuisine:"De producto, sin artificios", zone:"Hotel Urban",
- highlight:"1 estrella Michelin en el Hotel Urban — producto desnudo y técnica precisa, croqueta ganadora del mundial",
- desc:"En el Hotel Urban 5*GL, hoy con los chefs Javier Sanz y Juan Sahuquillo (ex Cañitas Maite). Cocina centrada en el producto sin artificios, con menús Clásico y Temporada. Su croqueta de jamón fue elegida Mejor Croqueta del Mundo 2021."},
-{cat:"De Autor", name:"Pipilacha", price:"$$$", cuisine:"De autor centrada en flores", zone:"Madrid (calle Azulejo)",
- highlight:"El primer restaurante de Madrid centrado por entero en las flores como ingrediente protagonista",
- desc:"De los jóvenes chefs Arán Rodrigo y Noé David (formados con Ramón Freixa y El Invernadero). Menú degustación cerrado que cambia con la temporada, con las flores como hilo conductor: pho de hierbabuena, pan de puerro con amapola, mantequilla de higuera."},
-{cat:"De Autor", name:"Clos Madrid", price:"$$$$", cuisine:"De autor, vinos y producto", zone:"Cuatro Caminos",
- highlight:"1 estrella Michelin de Marcos Granda (Skina) — cocina clásica con foco en una gran bodega",
- desc:"Del sumiller-restaurador Marcos Granda (Skina, Marbella). Cocina actual de base clásica, con menús Clósicos y Degustación. Consomé de caza con trufa, callos Robuchon, gran selección de champagnes y vinos de productor."},
-
-{cat:"Especializada", name:"Bistronómika", price:"$$$$", cuisine:"Pescado y marisco a la brasa", zone:"Calle Ibiza (proyecto Bulbiza)",
- highlight:"Templo del pescado salvaje a la brasa — 'No Karta' que depende cada día de la lonja",
- desc:"Del chef Carlos del Portillo (ex Ritz, Casino de Madrid). 'No Karta' sin platos fijos, dependiente del producto del día: pescados poco comunes (sargo, maragota, cherne), maduración en seco y guisos marineros. Gilda de atún rojo entre lo más celebrado."},
-{cat:"Especializada", name:"La Tasquería", price:"$$$$", cuisine:"Casquería de autor", zone:"Chamberí (Modesto Lafuente)",
- highlight:"1 estrella Michelin reinventando la casquería — Javi Estévez, ex Top Chef, hace que hasta los reacios disfruten",
- desc:"Del chef Javi Estévez, pionero en llevar la casquería madrileña a la alta cocina. Menús degustación con mollejas, sesos, manitas y callos reinterpretados con técnica actual. El local original (Duque de Sesto) sigue abierto como 'La Barra de la Tasquería', más informal y asequible."},
-{cat:"Especializada", name:"La Barra de la Tasquería", price:"$$$", cuisine:"Casquería, formato bistró", zone:"Duque de Sesto",
- highlight:"El local original de Javi Estévez antes de mudarse — casquería en formato más asequible",
- desc:"Primer local de Javi Estévez (2015), hoy convertido en una versión más informal y económica de La Tasquería, con ambiente de bistró desenfadado y los mismos principios de casquería fina reinventada."},
-{cat:"Especializada", name:"Azahara", price:"$$$$", cuisine:"Atún rojo de almadraba", zone:"Salamanca (Don Ramón de la Cruz)",
- highlight:"El templo del atún rojo en Madrid — ronqueos en directo y el famoso 'Furtivo', speakeasy secreto",
- desc:"Del Grupo Macarena (Sergio Fermosell), centrado en el atún rojo salvaje de almadraba: morrillo, tuétano de atún, chuletitas de ventresca. Cuenta con Furtivo by Azahara, un espacio clandestino tipo speakeasy para ronqueos privados. De 10 a 12 kilos de atún consumidos al día."},
-{cat:"Especializada", name:"Rural", price:"$$$$", cuisine:"Carnes de todo tipo, embutidos artesanales", zone:"Cerca del Paseo del Prado",
- highlight:"El otro proyecto de Rafa Zafra (Estimar) — pero dejando el mar para centrarse en la tierra y la carne",
- desc:"De Rafa Zafra, Anna Gotanegra y Ricardo Acquista (los de Estimar), con los chefs Alberto Pacheco y Willem Bonneu. Homenaje a la carne en todas sus formas: vaca, buey, cerdo, cordero, caza, aves, con embutidos y foies artesanales hechos en el propio restaurante."},
-{cat:"Especializada", name:"Los 33", price:"$$$$", cuisine:"Parrilla uruguaya-argentina", zone:"Plaza de las Salesas",
- highlight:"Una de las parrillas con más lista de espera de Madrid — chuletas de vaca rubia gallega con 60 días de maduración",
- desc:"Del parrillero Oswaldo 'Oswi' González Herce. Carnes y verduras a la brasa con guiños a despieces argentinos (entraña, picaña). Su bikini de prosciutto y queso Havarti a la parrilla es un entrante muy celebrado."},
-{cat:"Especializada", name:"Rafa", price:"$$$$", cuisine:"Marisquería clásica", zone:"Retiro (Narváez)",
- highlight:"Marisquería familiar desde 1958 — probablemente la mejor ensaladilla rusa de Madrid",
- desc:"Fundado en 1958 por los hermanos Rafael y Rodrigo Andrés, hoy dirigido por la segunda generación (Rafa y Miguel Ángel). Marisco del Cantábrico de calidad excepcional: gambas a la plancha, centolla, percebes, rodaballo. Precios elevados, pero producto de referencia."},
-{cat:"Especializada", name:"Raza Madrid", price:"$$$$", cuisine:"Parrilla de carnes premium", zone:"Chueca / varias sedes",
- highlight:"De los creadores de La Vaca Argentina — cortes internacionales de razas poco habituales en Madrid",
- desc:"De Antonio Aguilar (fundador de La Vaca Argentina). Carnes de razas variadas (holandesa, finlandesa, simmental alemana, retinta gaditana, black angus) con distintas maduraciones, a la parrilla. Puré de patata estilo Robuchon como guarnición destacada."},
-{cat:"Especializada", name:"Casa Julián de Tolosa", price:"$$$$", cuisine:"Asador vasco, chuletón", zone:"Cava Baja / Calle Ibiza",
- highlight:"El asador vasco de referencia en Madrid — chuletón considerado de los mejores del mundo",
- desc:"Sucursal madrileña del histórico asador de Tolosa (1954), de la familia Gorrotxategi. Carta corta: chuletón con maduración, puerros y pimientos del piquillo asados. Sin complicaciones, pura tradición vasca del fuego."},
-{cat:"Especializada", name:"La Bistroteca", price:"$$", cuisine:"Hamburguesas gourmet", zone:"Varias sedes en Madrid",
- highlight:"Mejor Hamburguesa Gourmet de España 2021 — carne de vaca gallega picada al momento",
- desc:"Hamburguesas con carne de vaca gallega picada al momento y brioche de masa madre horneado a diario. Su burger 'La Palma' (mojo picón, piña caramelizada, quesos palmeros) es de las más premiadas del país."},
-{cat:"Especializada", name:"La Vaca Argentina", price:"$$$", cuisine:"Parrilla argentina", zone:"Varias sedes en Madrid",
- highlight:"Clásico carnívoro madrileño desde 1994 — cortes argentinos, Wagyu y Black Angus en ambiente cálido",
- desc:"Cadena histórica de Madrid (más de 30 años) especializada en cortes de bife, entraña, asado de tira y chuletón, con carne importada semanalmente desde Argentina. También Wagyu de Burgos y Black Angus de Nebraska."},
-
-{cat:"Contemporánea", name:"Corral de la Morería (Restaurante Gastronómico)", price:"$$$$", cuisine:"De autor con raíces vascas", zone:"Centro (tablao flamenco)",
- highlight:"1 estrella Michelin dentro del mejor tablao flamenco del mundo — alta cocina y arte flamenco en un mismo edificio",
- desc:"Dentro del histórico tablao Corral de la Morería, este pequeño espacio (solo 4 mesas) ofrece un único menú degustación del chef David García, con marcado acento vasco. Cuenta con una de las mejores cartas de vinos de Jerez del mundo, con botellas históricas irrepetibles."},
-{cat:"Contemporánea", name:"Èter", price:"$$$$", cuisine:"Contemporánea con influencia mexicana-colombiana", zone:"Madrid",
- highlight:"Nueva estrella Michelin (2026) — los hermanos Tofé y su cocina personal con guiños latinos",
- desc:"De los hermanos Tofé: Sergio en cocina, Mario en sala y sumillería. Cocina contemporánea de marcada personalidad con interesantes influencias mexicanas y colombianas, en un único menú degustación que cambia cinco veces al año. Local íntimo y minimalista."},
-{cat:"Contemporánea", name:"VelascoAbellà", price:"$$$$", cuisine:"De mercado, ex Santceloni", zone:"Chamartín (Hispanoamérica)",
- highlight:"1 estrella Michelin del matrimonio que llevó Santceloni a la cima — cocina de producto sin modas",
- desc:"De Óscar Velasco (chef) y Montse Abellà (repostería y sala), ambos veteranos del mítico Santceloni (2 estrellas Michelin, cerrado en 2020). Cocina de mercado libre de modas con clásicos como el ravioli de ricotta ahumada con caviar o la gamba blanca al ajillo. Reservado 'El Apartamento' con cocina propia."},
-{cat:"Contemporánea", name:"Ancestral", price:"$$$$", cuisine:"Manchega actualizada, brasas y caza", zone:"Pozuelo de Alarcón",
- highlight:"1 estrella Michelin trasladado de Illescas a Pozuelo — cocina manchega de fuego, barro y memoria",
- desc:"De los chefs Víctor Infantes y Saúl González, mantuvieron su estrella tras mudarse de Illescas a Pozuelo. Cocina manchega actualizada de brasas y adobos, con fuerte componente cinegético (sopas de ajo en olla de barro, pichón asado al carbón). Cuenta con Brassafina, espacio anexo más informal."},
-{cat:"Contemporánea", name:"Casa José", price:"$$$", cuisine:"De producto, vegetales de Aranjuez", zone:"Aranjuez",
- highlight:"De los mejores tratando verduras en España — la huerta de Aranjuez en estado puro, aunque a las afueras de la capital",
- desc:"Del chef Fernando del Cerro, en Aranjuez (a una hora en tren de Madrid). Cocina centrada en las verduras de la huerta local, tratadas con técnicas variadas y miradas a la cocina asiática. Perdió la estrella Michelin en 2017 pero sigue considerado un referente absoluto."},
-{cat:"Contemporánea", name:"Chispa Bistró", price:"$$$$", cuisine:"Mediterránea de autor con brasas", zone:"Chueca/Justicia",
- highlight:"1 estrella Michelin de un chef argentino de 26 años — todo pasa por el fuego y las brasas",
- desc:"Del chef argentino Juan D'Onofrio, el más joven con estrella Michelin de España. Cocina mediterránea de autor con toques argentinos, japoneses e italianos; todos los platos pasan por brasas o ahumados. Plato icónico: el pichón en tres vuelcos. Espacio anexo íntimo, La Trasera."},
-{cat:"Contemporánea", name:"Pabú", price:"$$$$", cuisine:"De microtemporada, vegetal", zone:"Madrid",
- highlight:"1 estrella Michelin del chef Coco Montes (ex L'Arpège, París) — cocina vegetal que cambia cada día",
- desc:"Del chef Coco Montes, formado en el parisino L'Arpège. Cocina de microtemporada centrada en el producto vegetal, que cambia diariamente según lo que traen los proveedores."},
-{cat:"Contemporánea", name:"Tres por Cuatro", price:"$$$", cuisine:"De mercado con toques latinos", zone:"Goya",
- highlight:"Bib Gourmand Michelin — cocina de mercado con pinceladas mexicanas y peruanas",
- desc:"Del chef Álex Marugán, empezó en 2017 en el Mercado de Torrijos antes de mudarse a Goya. Carta dividida en 'Los de siempre' (clásicos como el torrezno y el taco de ossobuco pibil) y 'Los de hoy' (según temporada). Reconocido Bib Gourmand por su relación calidad-precio."},
-{cat:"Contemporánea", name:"Flor", price:"$$$", cuisine:"Vegetal, cocina contemporánea", zone:"Legazpi",
- highlight:"Nuevo proyecto escondido en Legazpi — cocina vegetal delicada con gran selección de vinos naturales",
- desc:"Del chef Cadu Gasparini (ex Gota), en Legazpi cerca de Madrid Río. Cocina donde lo vegetal y la delicadeza son protagonistas, con una bodega en constante mutación (vinos naturales y biodinámicos de Austria, Sicilia, el Jura...). La música, en vinilo, es parte central de la experiencia."},
-{cat:"Contemporánea", name:"Amós", price:"$$$", cuisine:"Cántabra de autor", zone:"Hotel Rosewood Villa Magna",
- highlight:"La embajada en Madrid del chef tres estrellas Jesús Sánchez (Cenador de Amós) — esencia del Cantábrico",
- desc:"Proyecto en Madrid del chef Jesús Sánchez (3 estrellas Michelin en El Cenador de Amós, Cantabria), con un concepto propio más cotidiano. Carta Memoria con producto cántabro: anchoas, verdinas, bogavante, tortilla. Premio Nacional de Gastronomía 2022."},
-{cat:"Contemporánea", name:"Tetsu", price:"$$$$", cuisine:"Japonesa teppanyaki", zone:"Junto a El Corte Inglés Serrano",
- highlight:"Teppanyaki de altísimo nivel hecho por dos chefs adolescentes — ya en la selección Michelin",
- desc:"De los jovencísimos chefs João Kather (Brasil) y Miguel de Aguilar (Madrid), formados en el MOM Culinary Institute. Cocina japonesa tradicional con toques originales en formato teppanyaki, con un menú omakase de 10 pases. Plato fetiche: vieira con crema de maíz."},
-{cat:"Contemporánea", name:"Santerra", price:"$$$$", cuisine:"De autor, mar y montaña", zone:"Madrid",
- highlight:"1 estrella Michelin del chef Miguel Carretero — tapas elegantes inspiradas en mar y montaña",
- desc:"Del chef Miguel Carretero, con menús como 'Monte Bajo' y 'Veda Abierta' que combinan tapas inspiradas en mar y montaña con platos de degustación elegantes."},
-{cat:"Contemporánea", name:"Mudrá", price:"$$", cuisine:"100% vegetal (plant-based)", zone:"Recoletos",
- highlight:"Recomendado en la Guía Michelin — alta cocina 100% vegetal con presentaciones de mucho nivel visual",
- desc:"Restaurante vegano del chef internacional Matthew Kenney, con carta basada exclusivamente en verduras, frutas, cereales, legumbres y flores. Tiradito de alcachofas, ceviche de shiitake y nigiri de pera entre sus platos más fotografiados."},
-{cat:"Contemporánea", name:"Playing Solo", price:"$$$$", cuisine:"Izakaya kaiseki, menú único", zone:"Centro",
- highlight:"Solo 8 comensales por servicio en torno a una barra de mármol — kaiseki con un giro moderno",
- desc:"Pequeño rincón gastronómico con filosofía izakaya: el chef cocina frente a los comensales con diálogo constante. Menú kaiseki con giro actual y producto de cercanía. Una única 'función' por servicio, todos empiezan al unísono."},
-{cat:"Contemporánea", name:"HERmosilla", price:"$$$", cuisine:"Internacional (italiana, mexicana, mediterránea)", zone:"Barrio de Salamanca",
- highlight:"Cocina viajera sin salir de Madrid — del chef italiano Marco Carboni con socio mexicano",
- desc:"Del chef italiano Marco Carboni (formado con Bottura y Gordon Ramsay) y su socio mexicano Alberto Ituarte. Carta dividida en picar, crudo, josper, verdura, horno de leña y granos, con ceviches, pizzas de masa madre y arroces. Decoración con árboles y mármol rosado."},
-{cat:"Contemporánea", name:"Bichopalo", price:"$$$", cuisine:"Creativa, sin carta fija", zone:"Chamberí",
- highlight:"Solo menú degustación, sin carta — cocina creativa de los hermanos Pozuelo que aspira a su primera estrella",
- desc:"De los hermanos Daniel y Guillermo Pozuelo. Sin carta tradicional: solo menús degustación (corto de 6 pases, largo de 11) que cambian varias veces al año según mercado y la creatividad del chef Daniel Pozuelo."},
-{cat:"Contemporánea", name:"MO de Movimiento", price:"$$$", cuisine:"Sostenible, mediterránea", zone:"Cerca de Nuevos Ministerios",
- highlight:"Más de 1.000 m² dedicados a la sostenibilidad y la conciencia social — pizzas de horno de bóveda",
- desc:"De Felipe Turell y Javier Antequera (Proyectos Conscientes). Declaración de intenciones en sostenibilidad: productos artesanales, de proximidad y ecológicos, con gran terraza cubierta y dos hornos de bóveda para sus pizzas."},
-
-{cat:"De Mercado", name:"Verdejo Restaurante y Tabanco", price:"$$$", cuisine:"De mercado, tradicional con toques de Jerez", zone:"Salamanca (Díaz Porlier)",
- highlight:"Cariño, tradición y un tabanco propio — uno de los pocos lugares de Madrid para vivir el Jerez en sala",
- desc:"De Marian Reguera, en homenaje a su socia y amiga Carmen Moragrega, fallecida en 2019. Cocina tradicional de raíces familiares con escabeches premiados (mejillón, caballa, ternera) y un tabanco propio con manzanillas, finos y olorosos de Jerez."},
-{cat:"De Mercado", name:"AskuaBarra", price:"$$$", cuisine:"De producto, parrilla y guisos", zone:"Centro (cerca del Congreso)",
- highlight:"De los creadores del Askua de Valencia — producto preciso, ideal para compartir entre amigos",
- desc:"De los hermanos Jorge y Nacho Gadea, hermano informal del prestigioso Askua valenciano. Cocina tradicional renovada con predominio de parrilla y guisos: croquetas de rabo de toro, steak tartar, patatas bravas. Local pequeño y siempre lleno."},
-{cat:"De Mercado", name:"La Montería", price:"$$$", cuisine:"Tradicional, caza y producto", zone:"Retiro",
- highlight:"Bib Gourmand desde 1963 — taberna familiar de toda la vida especializada en caza",
- desc:"Fundada en 1963 por Juan José y Mercedes, hoy en tercera generación. Cocina andaluza con influencias catalana, vasca, navarra y gallega. Especialistas en caza (solomillo de venado, escalopines de jabalí, perdiz al curry). Las 'gambas gabardina invertidas' son su plato más popular."},
-{cat:"De Mercado", name:"Quinqué", price:"$$$", cuisine:"Tradicional renovada", zone:"Chamartín",
- highlight:"Bib Gourmand de la Guía Michelin — cocina tradicional puesta al día en un local muy coqueto",
- desc:"Pequeño restaurante de barrio en Chamartín con distinción Bib Gourmand. Cocina tradicional renovada en un ambiente íntimo y acogedor."},
-{cat:"De Mercado", name:"Marcano (Taberna Marcano)", price:"$$$", cuisine:"De producto, cocina de mercado", zone:"Retiro (calle Menorca)",
- highlight:"Pequeño y siempre lleno — del que fue chef del Goizeko Wellington, en la zona de tabernas del Retiro",
- desc:"Pequeño local en la calle Menorca dirigido por un ex chef del Goizeko Wellington, en la misma zona que Taberna Laredo y La Castela. Cocina de mercado de producto en un espacio reducido, mejor reservar."},
-{cat:"De Mercado", name:"La Castela", price:"$$$", cuisine:"Tradicional de producto", zone:"Retiro (Doctor Castelo)",
- highlight:"Parada obligatoria del Retiro — chipirones, arroces y habitas que justifican la difícil reserva",
- desc:"Clásico de la zona de tabernas del Retiro, junto a La Montería y Taberna Laredo. Arroces cremosos, navajas y chipirones como platos destacados. Reservas muy solicitadas."},
-{cat:"De Mercado", name:"Castelados", price:"$$$", cuisine:"Tradicional renovada", zone:"Retiro (Antonio Acuña)",
- highlight:"El hermano pequeño y más moderno de La Castela — raciones contundentes en barra o comedor",
- desc:"Inaugurado en 2016 como versión más moderna de La Castela, muy cerca en el distrito de Retiro. Raciones contundentes de producto de calidad, con una gran barra de estaño y suelo de cerámica palladiana."},
-{cat:"De Mercado", name:"Rocacho", price:"$$$$", cuisine:"Brasas, carnes de El Capricho", zone:"Padre Damián / Marqués de Salamanca / Valdebebas",
- highlight:"Único restaurante de Madrid con carne de El Capricho (León) — 'la mejor carne roja del mundo' según Time",
- desc:"Especialistas en brasa con tres sedes en Madrid. Único restaurante de la ciudad que ofrece carne de la finca El Capricho (Jiménez de Jamuz, León), aclamada internacionalmente. Arroz del señorito, pescados a la brasa y buñuelos de cecina."},
-
-{cat:"Gastrotaberna", name:"ita", price:"$$$", cuisine:"Mediterránea, verduras ecológicas", zone:"Salamanca (zona de Lista)",
- highlight:"Homenaje a una abuela venezolana — verduras ecológicas y vinos de mínima intervención, sin nada de comida venezolana",
- desc:"De la pareja venezolana Mariela Fernández (ingeniera química convertida en chef) y William Lamas (sumiller). El nombre rinde homenaje a la abuela 'Ita' de Mariela. Carta pequeña centrada en verduras ecológicas de proximidad y vinos de poca intervención."},
-{cat:"Gastrotaberna", name:"Angelita Madrid", price:"$$$", cuisine:"Bar de vinos con bistró", zone:"Gran Vía",
- highlight:"Más vinos que platos en la carta — el pisto de la huerta familiar zamorana es de culto",
- desc:"De los hermanos Villalón, herederos de varios negocios familiares. Bar de vinos con un pequeño bistró informal: el famoso pisto se hace con verduras de la huerta ecológica familiar en Zamora. Más de 70 referencias de vino por copa que cambian cada mes."},
-{cat:"Gastrotaberna", name:"Brutalista", price:"$$", cuisine:"Escabeches y cocina cinegética", zone:"Moncloa-Aravaca",
- highlight:"El nuevo templo de los escabeches en Madrid — menús flexibles construidos con el cliente",
- desc:"Del chef Pablo López (ex La Tasquita de Enfrente, formado con Luis Alberto Lera en cocina cinegética). Local de estética industrial con menús degustación flexibles (Base, En Bruto y uno más largo) que se configuran entre chef y cliente. Maestría en escabeches y caza."},
-{cat:"Gastrotaberna", name:"Toga", price:"$$$", cuisine:"Fusión latinoamericana-asiática", zone:"La Latina (Plaza de Cascorro)",
- highlight:"Fusión latino-asiática en La Latina — los noodles con atún rojo son el plato de culto",
- desc:"Reinterpreta la gastronomía latinoamericana y asiática con estilo propio. Noodles con mayonesa de kimchi y atún rojo, considerado uno de los mejores platos de pasta de Madrid por sus fans. Local pequeño, conviene reservar."},
-{cat:"Gastrotaberna", name:"Toguita", price:"$$$", cuisine:"Fusión latinoamericana-asiática", zone:"La Latina (Plaza de Cascorro)",
- highlight:"El hermano pequeño de Toga — misma esencia y estilo en formato más informal",
- desc:"Nace del éxito de Toga, compartiendo esencia, atención y estilo gastronómico, en la misma zona de La Latina."},
-{cat:"Gastrotaberna", name:"Marzeah Taberna", price:"$$$", cuisine:"Fusión viajera, sin carta", zone:"Junto al Parque de Berlín",
- highlight:"Taberna 'gamberra' sin carta — los platos llegan hasta que tú digas basta",
- desc:"Del chef Sergio Guijarro (ex Montia y Bahía Taberna). Sin carta tradicional: fusión viajera y fondos sabrosos a precios comedidos, sirviendo plato tras plato hasta que el comensal indica que ya no quiere más. Bao de panceta estilo Momofuku y rollito de primavera con steak tartare entre sus hits."},
-{cat:"Gastrotaberna", name:"Sala de Despiece", price:"$$$", cuisine:"De producto, formato barra de matadero", zone:"Chamberí (Alonso Cano, antes Ponzano)",
- highlight:"Estética de matadero/pescadería para comer de pie en barra — referencia en el World's 50 Best Discovery",
- desc:"Del chef Javier Bonet. Local decorado como una antigua sala de despiece de carnicería, con producto expuesto como en un mercado. Cocina honesta y de calidad: chuletón en cenital, steak tartar, ostras, mollejas. Se mudó en 2024 a un local más grande en Alonso Cano."},
-{cat:"Gastrotaberna", name:"Marmitón Bistró", price:"$$$", cuisine:"Bistró clásico con técnicas de fermentación", zone:"La Latina",
- highlight:"Escondido en La Latina — recetas clásicas reinventadas con fermentación, ahumado y encurtido",
- desc:"De los chefs Pablo Sánchez Jiménez y Lalo Zarcero (formados en cocinas con estrella Michelin como Corral de la Morería y Fismuler). Carta viva que cambia semanalmente según temporada, con técnicas de fermentación, ahumado y encurtido sobre recetas clásicas."},
-{cat:"Gastrotaberna", name:"Casa Mortero", price:"$$$", cuisine:"Guisos y brasas tradicionales", zone:"Madrid",
- highlight:"Sin normas en la mesa — guisos, cazuelas y salseras pensadas para mezclar y rebañar",
- desc:"Cocina sobre recetas con solera, con técnicas de siempre (fuego lento, brasa) y conservas a la vieja usanza (escabeches, salazones, encurtidos). Filosofía de 'como en casa', sin formalismos."},
-{cat:"Gastrotaberna", name:"Haranita", price:"$$", cuisine:"Baos y platillos asiáticos", zone:"Junto a Gran Vía",
- highlight:"De los creadores de Nakeima — baos y platillos accesibles, con un toque de caviar asequible",
- desc:"De los mismos socios de Nakeima (una de las barras más deseadas de Madrid). Carta corta y accesible de baos y platillos: siu mai de papada, black bao de calamares, ensalada de callos, y un guiño al lujo con caviar a precio razonable."},
-{cat:"Gastrotaberna", name:"Dispatch", price:"$$", cuisine:"Americana, sándwiches y hamburguesas", zone:"Chamberí",
- highlight:"El sándwich de pastrami y la hamburguesa más comentados de Madrid — todo 98% hecho en casa",
- desc:"De Nicolás Bejarano (chef con experiencia en restaurantes con estrella Michelin) y Magdalena Iribarren. Carta muy corta pero redonda: sándwich de pastrami estilo deli neoyorquino, hamburguesa, pollo frito extra crujiente y postres caseros."},
-
-/* ===== Categoría Japonesa (La Gastrolista) ===== */
-{cat:"Japonesa", name:"Sushi Bar Hannah", price:"$$$$", cuisine:"Japonesa kaiseki y omakase", zone:"Salamanca (junto al Rosewood Villa Magna)",
- highlight:"Uno de los japoneses más auténticos de Madrid — del chef londinense formado en el 2 estrellas UMU",
- desc:"Del chef Janek Flemyng (Londres), formado en UMU (2 estrellas Michelin) tras pasar por Roka y Black Pig. Tres menús omakase (Omakase, Sushi Omakase y Kaiseki) y una extensa carta. Sacrifican y limpian sus propias anguilas, como en los mejores sushi-ya de Japón. Mejor en barra que en mesa."},
-{cat:"Japonesa", name:"Toki", price:"$$$$", cuisine:"Japonesa, sushi de autor evolutivo", zone:"Centro (Sagasta)",
- highlight:"1 estrella Michelin — barra para solo 6 comensales que recorre la historia del sushi a través del arroz",
- desc:"Del grupo de Marcos Granda (siete estrellas Michelin en total), con el chef Tino Singharaj (campeón de Francia de Sushi 2024). Local 'invisible' sin cartelería. Menú Omakase que viaja por distintas épocas de la cocina japonesa, usando distintos aliños de arroz en cada etapa. Solo 6 plazas."},
-{cat:"Japonesa", name:"Kyoshi", price:"$$", cuisine:"Japonesa accesible (sushi, donburi, ramen)", zone:"Barrio de las Letras (Hotel DoubleTree)",
- highlight:"La cara accesible del chef Ricardo Sanz (estrella Michelin en Wellington) — sushi de calidad a precio razonable",
- desc:"Del Grupo Ricardo Sanz (antes llamado Kirei). Carta amplia con donburi, futomaki, ramen tonkotsu y platos calientes, además de menús degustación desde 41€ hasta el omakase por 100€. La opción asequible del mismo chef tras su estrella Michelin en el Wellington."},
-{cat:"Japonesa", name:"Ebisu by Kobos", price:"$$$$", cuisine:"Sushi purista estilo Edo", zone:"La Latina",
- highlight:"Sushi al estilo más puro de Tokio — el chef aprendió un año en Japón con su propio sensei",
- desc:"Del chef José Kobos Cortés, que se formó un año en Japón bajo la tutela de Norihito Endo (Ebisu Endo, Shibuya). Barra para 9 comensales con único menú omakase de unos 15-16 pases (185€). Anguila viva comprada al Delta del Ebro y trabajada in situ; vinagre de arroz traído de Japón con cupo limitado."},
-{cat:"Japonesa", name:"Saisho", price:"$$$", cuisine:"Sushi tradicional", zone:"Moncloa-Aravaca / Chamberí",
- highlight:"Uno de los japoneses favoritos de los aficionados puristas de Madrid, según muchas críticas",
- desc:"Del chef Bastian Paasche Fuentes (ex Doki Doki, Ikura) y Natalia Arellano en sala. Especialización en nigiri y sashimi tradicionales con distintos cortes de atún, wasabi y soja elaborados en casa. Omakase de nigiri donde el chef decide la secuencia según el producto del día."},
-{cat:"Japonesa", name:"Sen Omakase", price:"$$$$", cuisine:"Kaiseki y sushi inmersivo", zone:"Chamartín",
- highlight:"1 estrella Michelin — experiencia inmersiva en cuatro salas distintas, con ceremonia del té incluida",
- desc:"Del chef Steven Wu, formado en Tokio y Kioto (incluido el histórico Uosaburo, 9 generaciones). Menú omakase sorpresa de 30-35 bocados que recorre cuatro espacios: recepción tipo jardín, barra japonesa, salón de té con ceremonia, y coctelería final. Carta de vinos y sakes con más de 250 referencias."},
-{cat:"Japonesa", name:"Zuara Sushi", price:"$$$$", cuisine:"Sushi de autor", zone:"Madrid",
- highlight:"1 estrella Michelin y 1 Sol Repsol — del chef David Arauz, con arroz Koshihikari traído de Japón",
- desc:"Del chef David Arauz. Barra para 12 comensales y comedor privado para 7. Dos menús omakase con platos calientes y fríos, culminando en nigiris hechos con arroz Koshihikari importado directamente de Japón."},
-{cat:"Japonesa", name:"Ta-Kumi", price:"$$$", cuisine:"Japonesa contemporánea, sushi", zone:"Salamanca (Claudio Coello)",
- highlight:"Llegó a Madrid tras triunfar en Marbella y Málaga — fuerte en pescado crudo y menú Matsuri con opción de Wagyu",
- desc:"De Álvaro Arbeloa y el chef Toshio Tsutsui. Barra de sushi, dos plantas y un reservado. Producto de las costas malagueñas con técnica nipona: teppanyaki, wok, gyozas y yakitoris además del sushi. Destacan el tartar de toro con trufa y el sashimi de carabinero con cabeza asada."},
-{cat:"Japonesa", name:"MYO Hand Roll Bar", price:"$$$", cuisine:"Hand rolls japoneses con toque mediterráneo", zone:"Chamberí (García de Paredes)",
- highlight:"El primer hand roll bar de Madrid — sushi para comer con las manos, con guiños a España",
- desc:"Carta diseñada por Álvar Fernández (ex sous chef de Ugo Chan), buscando equilibrio entre tradición japonesa y sabor mediterráneo. Gilda Myo, soba carbonara con atún toro y una gran batería de hand rolls hechos al momento en su barra."},
-{cat:"Japonesa", name:"Mateo Honten", price:"$$$", cuisine:"Japonesa con cócteles de autor", zone:"Chamberí/Centro (San Mateo)",
- highlight:"Sushi y cócteles de autor en un ambiente que fusiona lo nipón con lo singular",
- desc:"Restaurante japonés con propuesta que combina sushi, cócteles de autor y platos como el pollo frito karaage y el maguro katsu sando."},
-{cat:"Japonesa", name:"Saku Izakaya", price:"$$", cuisine:"Izakaya, especialistas en ramen", zone:"Junto a Plaza de Olavide",
- highlight:"El mejor ramen de Madrid, según muchas críticas — del chef Chan Li, formado tres años en Tokio",
- desc:"De los hermanos Chan Li y Jun. El chef se formó en Kabuki antes de pasar tres años en Tokio. Ramen Mazesoba y paitan de pollo elaborados con fideos y caldos propios, además de nigiris clásicos y tapas japonesas (gyozas, berenjena con miso, katsu sando) en ambiente de taberna informal."},
-{cat:"Japonesa", name:"Izariya", price:"$$$$", cuisine:"Kaiseki ryori (alta cocina japonesa formal)", zone:"Centro (Zurbano)",
- highlight:"Alta cocina japonesa formal sin nigiris ni makis — solo para los que buscan algo distinto a lo habitual",
- desc:"Del chef Masahito Okazoe (con restaurantes propios en Japón: Kōchi, Kobe y Ginza). Cuatro menús degustación (60 a 120€) de Kaiseki ryori, el estilo formal y sofisticado de la cocina japonesa, acompañado de sakes de más de 18 bodegas. Concepto muy alejado del sushi convencional."},
-{cat:"Japonesa", name:"Ramen Kotsu x Kotsu", price:"$$", cuisine:"Ramen estilo Hokkaidō", zone:"Junto a Glorieta de Bilbao",
- highlight:"El único en Madrid con el auténtico ramen de Hokkaidō — del chef japonés Makoto, natural de Sapporo",
- desc:"Del chef Makoto, originario de Sapporo. Especializado en ramen de la isla de Hokkaidō, con un equipo de cocina íntegramente japonés. Caldo de cerdo con una salsa de elaboración propia que recrea el sabor típico de Sapporo. Tras su éxito, abrió un segundo local, Ramen Ishou."},
-
-/* ===== Categoría Internacional (La Gastrolista) ===== */
-{cat:"Internacional", name:"Ugo Chan", price:"$$$$", cuisine:"Japo-castiza de autor", zone:"Chamartín (Félix Boix)",
- highlight:"1 estrella Michelin — fusión entre Japón y Madrid: gyozas de callos a la madrileña, nigiri con foie y anguila",
- desc:"Del chef Hugo Muñoz (ex Carbón Negro, Ricardo Sanz Wellington, Viridiana). Cocina japonesa con guiños constantes a la gastronomía madrileña: gyozas de callos, ensaladilla rusa deconstruida, nigiri de foie homenajeando a Berasategui. Carta o menú Omakase a medida, con coctelería de referencia en la escena madrileña."},
-{cat:"Internacional", name:"Kuoco", price:"$$$", cuisine:"Fusión global (Asia, Latinoamérica, Mediterráneo)", zone:"Chueca (San Bartolomé) / Salesas",
- highlight:"Uno de los mejores fusión de Madrid según la crítica — viaja de la India a Perú pasando por Japón y México sin perder coherencia",
- desc:"De los venezolanos Rafael Bérgamo (cocina) y Andrés Correa (sala), con más de 9 años de trayectoria. Cocina viajera con producto e influencias de Venezuela, Perú, México, Japón, Tailandia, India y China. Menú degustación Attraverso (12 pases) o carta; gran selección de champagnes de pequeños productores."},
-{cat:"Internacional", name:"Osaka Nikkei", price:"$$$$", cuisine:"Nikkei (peruano-japonesa)", zone:"Paseo de la Castellana",
- highlight:"Primer local en Europa de una marca con más de 20 años y locales en Buenos Aires, São Paulo y Miami",
- desc:"Del grupo MCK, originario de Lima. Cocina nikkei con nigiris y tiraditos de autor: Toro Tartar con caviar Ossetra, Ceviche Wasabi, Tiradito Carpassion. Incluye Nikkei Bar/Raw Bar con ostras y sashimis, y parrilla con Osaka Steak de Simmental."},
-{cat:"Internacional", name:"Llama Inn", price:"$$$", cuisine:"Peruana contemporánea", zone:"Justicia (Conde de Xiquena)",
- highlight:"Llegó desde Nueva York tras conquistar a la crítica — del chef Erik Ramírez (ex Eleven Madison Park)",
- desc:"Del chef ejecutivo Erik Ramírez y el chef de cocina Luis Cornejo (ex La Mar, Astrid & Gastón). Cocina peruana contemporánea con anticuchos y ceviches, gran coctelería con pisco y destilados latinoamericanos, y un brunch que se ha hecho muy popular en Madrid."},
-{cat:"Internacional", name:"Bao Li", price:"$$$$", cuisine:"China cantonesa imperial reinterpretada", zone:"Madrid",
- highlight:"Recetas cantonesas tradicionales reinterpretadas por los hermanos Bao tras años de investigación y viajes",
- desc:"De los hermanos Felipe y María Bao. Eleva la imagen tradicional del restaurante chino con cocina imperial cantonesa de raíz, en un espacio de ambiente lujoso e inspiración oriental. Ideal para una cena romántica."},
-{cat:"Internacional", name:"Benares", price:"$$$$", cuisine:"India de autor", zone:"Chamberí (Zurbano)",
- highlight:"El único restaurante de alta cocina india de Madrid — del primer chef indio del mundo con estrella Michelin",
- desc:"Sucursal del Benares de Londres (estrella Michelin desde 2003), liderado por el chef Atul Kochhar. Cocina india actualizada con horno tandoor y parrilla de carbón india: pollo tandoori estilo antiguo Delhi, rape con croqueta de cangrejo. Thali ejecutivo de mediodía por 24€, con fines solidarios. Terraza-jardín con estanque."},
-{cat:"Internacional", name:"Le Bistroman Atelier", price:"$$$$", cuisine:"Francesa clásica actualizada", zone:"Madrid de los Austrias",
- highlight:"Dos Soles Repsol — alta cocina francesa clásica con técnica contemporánea, junto al Palacio Real",
- desc:"Del empresario Miguel Ángel García Marinelli y el chef Stéphane del Río (2019). Recetas clásicas francesas aligeradas con técnicas actuales, en un bistró decorado al estilo provenzal. Gran carta de vinos centrada en Champagne. Premio Mejor Restaurante de Cocina Internacional 2024 de la Comunidad de Madrid."},
-{cat:"Internacional", name:"Manifesto 13", price:"$$$", cuisine:"Italiana de autor con toques peruanos", zone:"Chamberí (Trafalgar)",
- highlight:"'A modo nostro' — italiano que rompe lo convencional, de dos hermanos peruanos sin experiencia previa en hostelería",
- desc:"De los hermanos peruanos Nico y Mark Duncan junto a dos socios más. Recetario italiano reinterpretado con libertad: lengua tonnata, agnolotti de piña y parmigiano, bacalao in saor. Bodega de vinos naturales y cócteles de autor. Local de estilo industrial con sótano privado."},
-{cat:"Internacional", name:"Doppelgänger", price:"$$", cuisine:"Fusión de autor accesible", zone:"Mercado de Antón Martín",
- highlight:"Alta cocina sin pompa a 5-6€ el plato — del chef que cerró su restaurante con estrella Michelin por no ser feliz",
- desc:"Del chef Samy Alí (ex La Candela Restò). En un puesto del Mercado de Antón Martín, sin camareros, con barra y cocina abierta. Carta corta sujeta al mercado, con influencias mexicanas, coreanas y japonesas: gazpacho con aire de kimchi, tamal de cordero, kare de plátano a la parrilla."},
-{cat:"Internacional", name:"La Piperna", price:"$$$", cuisine:"Italiana", zone:"Tetuán (Infanta Mercedes)",
- highlight:"Considerado por muchos su italiano favorito de Madrid, junto a referencias como Taberna Laredo o Angelita",
- desc:"Restaurante italiano de Napolistico S.L., con buena reputación entre aficionados a la gastronomía italiana de Madrid."},
-{cat:"Internacional", name:"Chiribita Tacos", price:"$$", cuisine:"Mexicana de autor (tacos)", zone:"Bernabéu Market",
- highlight:"Más de 2.000 tacos servidos en un día — del ex jefe de cocina de StreetXO y RavioXO con Dabiz Muñoz",
- desc:"Del chef mexicano Balo Ortiz, ex chef ejecutivo de Dabiz Muñoz en sus distintos negocios. Tacos de autor con producto español y técnica de alto nivel: trompo ibérico, txuleta, tuétano, cachetada, chashu con toque japonés. Sin carta impresa fija; primer proyecto propio de la consultora JAMZ."},
-{cat:"Internacional", name:"Tampu", price:"$$$", cuisine:"Peruana creativa y de autor", zone:"Chueca (Prim)",
- highlight:"Más de una década siendo referencia de la cocina peruana en Madrid — del chef Miguel Valdiviezo",
- desc:"Del chef Miguel Ángel Valdiviezo, abierto desde 2011 (originalmente en Prosperidad). Cocina peruana clásica y de fusión con raciones generosas: ceviche amazónico, ceviche pachamanquero, ají de gallina. Menú degustación con maridaje de piscos."},
-{cat:"Internacional", name:"Tripea", price:"$$$", cuisine:"Fusión peruana-asiática-española", zone:"Mercado de Vallehermoso",
- highlight:"El mejor puesto de mercado de Madrid según otros cocineros (Premios ACYRE 2023) — fusión Perú-Asia sin pretensiones",
- desc:"Del chef Roberto Martínez Foronda (formado en Perú con Malabar y Maido, fundador también de Nakeima). Menú degustación de 7-8 pases en una barra estrecha dentro del mercado: ceviche caliente de mejillones al wok, royal de foie con erizos, mollejas sweet & chili. Reserva muy competida; cuenta con un 'hermano pequeño', Triperito, en el Mercado de la Paz."},
-{cat:"Internacional", name:"Tandoori Station", price:"$$$", cuisine:"India (norte de India, tandoor)", zone:"Salamanca (Ortega y Gasset)",
- highlight:"Considerado por muchos el mejor indio de Madrid — decoración temática de estación de metro londinense",
- desc:"Desde 2005, del chef Nadeem Siraj. Cocina del norte de India con horno tandoor: pollo tandoori, biryanis, kofta en salsa de almendras. Decoración muy elaborada simulando una estación de metro, con mapas del metro de Delhi y maletas en los altillos. Menú degustación accesible; conviene reservar con antelación."},
-{cat:"Internacional", name:"Bakan", price:"$$$", cuisine:"Mexicana tradicional", zone:"Madrid",
- highlight:"Cocina mexicana con el espíritu y la tradición de varias generaciones",
- desc:"Restaurante de comida mexicana que reproduce platos tradicionales con el espíritu de varias generaciones de cocina familiar."},
-{cat:"Internacional", name:"Quispe", price:"$$$", cuisine:"Peruana fusión, pisco bar", zone:"Salamanca (cerca del Retiro)",
- highlight:"Del Grupo Quispe (también Sillao y Ponja Nikkei) — homenaje a uno de los apellidos más populares de Perú",
- desc:"De Constanza Rey y César Figari. Cocina peruana fusionada con Japón, España y China: cebiches, tiraditos, causas, makis y nigiris. Gran selección de pisco sour y chilcanos. Espacio amplio con zonas a diferentes alturas, cerca del Retiro."},
-{cat:"Internacional", name:"Parking Pizza", price:"$$", cuisine:"Pizza napolitana en horno de leña", zone:"Madrid",
- highlight:"Llegó a Madrid tras triunfar en Barcelona desde 2015 — pizzas espectaculares de horno de leña",
- desc:"Pizzería que arrasó en Barcelona antes de abrir en Madrid, con pizzas elaboradas en horno de leña tradicional."},
-{cat:"Internacional", name:"El Gioviale", price:"$$$", cuisine:"Italiana", zone:"Retiro (Málaga)",
- highlight:"Restaurante italiano en el barrio de Retiro",
- desc:"Restaurante de cocina italiana ubicado en la calle Málaga, en el distrito de Retiro."},
-
-/* ===== Categoría Regional (La Gastrolista) ===== */
-{cat:"Regional", name:"El Pedrusco de Aldealcorvo", price:"$$$", cuisine:"Castellana, asados en horno de leña", zone:"Chamberí (Juan de Austria)",
- highlight:"Horno de leña centenario traído piedra a piedra desde Segovia — cochinillo entre los mejores de España",
- desc:"De los hermanos Gonzalo y Antonio de Pedro, en homenaje a la aldea segoviana de su padre. Horno de adobe de más de 300 años, trasladado desde una panadería del pueblo. Cochinillo elaborado solo con agua y sal, lentejas castellanas con sobrasada mallorquina, garbanzos con manitas de cochinillo."},
-{cat:"Regional", name:"La Manduca de Azagra", price:"$$$$", cuisine:"Navarra, producto y verduras de temporada", zone:"Centro (Sagasta)",
- highlight:"Referencia de la cocina navarra en Madrid — vanguardia escénica con emotividad culinaria",
- desc:"Restaurante de cocina navarra con fuerte identidad regional, centrado en producto de temporada y verduras de Navarra."},
-{cat:"Regional", name:"La Catapa", price:"$$$", cuisine:"Tradicional madrileña, taberna castiza", zone:"Retiro (Menorca)",
- highlight:"Taberna con más de una década de solera junto al Retiro — referencia nacional del tapeo madrileño clásico",
- desc:"Del cocinero Miguel Ángel Jiménez (ex El Amparo, Ramsés). Callos, rabo de toro, tuétano asado, croquetas y una de las cartas de vinos más extensas y dinámicas de Madrid. Barra en forma de L siempre concurrida."},
-{cat:"Regional", name:"Arima", price:"$$$", cuisine:"Vasca, taberna-vermutería", zone:"Chamberí (Ponzano)",
- highlight:"Taberna-vermutería vasca que revolucionó Ponzano — de la donostiarra Nagore Irazuegi",
- desc:"De Nagore Irazuegi (sala) y el chef Rodrigo García (ex Chuka Ramen Bar). Pintxos, raciones y carta de cocina de producto vasca pura, con más de 30 referencias de vermú artesano. Ambiente desenfadado e íntimo a la vez, muy familiar."},
-{cat:"Regional", name:"Agárimo", price:"$$$", cuisine:"Gallega/atlántica, taberna sostenible", zone:"Chamberí (Ponzano)",
- highlight:"Taberna atlántica de desperdicio cero — sabores gallegos con un fuerte compromiso de sostenibilidad",
- desc:"Del chef-propietario Guille Rivera. Taberna atlántica con filosofía de cero desperdicio (toda merma se reutiliza en otra receta). Navajas con pil-pil y mojo verde, tortilla rellena de manitas de cerdo, merluza a la gallega 2.0. Bodega con predominio de vinos gallegos."},
-{cat:"Regional", name:"O'Grelo", price:"$$$$", cuisine:"Gallega, marisco y pescado", zone:"Madrid",
- highlight:"Más de 30 años siendo referente de la cocina gallega en Madrid — segunda generación de una familia llegada de Galicia",
- desc:"Fundado por una familia gallega hace más de tres décadas, hoy en segunda generación. Marisco y pescado de las lonjas gallegas seleccionado a diario: centollo, merluza de pincho a la plancha, pulpo a la gallega. Cocina tradicional con toques de innovación."},
-{cat:"Regional", name:"Vinoteca García de la Navarra", price:"$$$$", cuisine:"Cocina tradicional con gran bodega", zone:"Centro (cerca de Cibeles)",
- highlight:"Una de las mejores bodegas de Madrid (700+ referencias) — de dos hermanos, cocinero y sumiller",
- desc:"De los hermanos Pedro (cocina) y Luis García de la Navarra (sumiller, ex presidente de la Asociación Madrileña de Sumilleres). Cocina tradicional de temporada: verduras de Navarra, perdices de tiro, atún de Barbate, verdinas. Una de las barras más reputadas de la capital."},
-{cat:"Regional", name:"Cañadío", price:"$$$", cuisine:"Cántabra, regional actualizada", zone:"Chamberí (Conde de Peñalver)",
- highlight:"La sucursal madrileña del histórico Cañadío de Santander — cocina cántabra para todos los bolsillos",
- desc:"Versión madrileña del restaurante homónimo de Santander, del Grupo Cañadío. Cocina regional cántabra actualizada: merluza, rabas, tarta de queso. Pinchos y raciones en barra o terraza, además de servicio de mesa."},
-{cat:"Regional", name:"La Cocina de Frente", price:"$$$", cuisine:"Casera española actualizada", zone:"Calle Ibiza (proyecto Bulbiza)",
- highlight:"Cocido madrileño con invitados sorpresa — del grupo de José Andrés, asesorado por Juanjo López Bedmar",
- desc:"Del Grupo Bulbiza (José Andrés y los hermanos Riberas), con el chef Carlos García (ganador del Concurso de Escabeche de Madrid Fusión 2022). Recetario popular español renovado semanalmente: pisto manchego, jarrete de ternera, codorniz en escabeche. Famoso por su cocido madrileño con chefs invitados."},
-{cat:"Regional", name:"Surtopía", price:"$$$", cuisine:"Andaluza (Sanlúcar de Barrameda)", zone:"Salamanca (Núñez de Balboa)",
- highlight:"Un trocito de Sanlúcar en Madrid desde 2012 — vinos del Marco de Jerez y producto andaluz puro",
- desc:"Del chef José Calleja, originario de Sanlúcar de Barrameda. Producto procedente de Andalucía: pescados y mariscos gaditanos y almerienses, ibéricos de Huelva y Córdoba, vinos de Jerez y Málaga. Gallo de corral 'afuegolento', mero confitado con pil-pil de panaderas."},
-{cat:"Regional", name:"El Pimiento Verde", price:"$$$", cuisine:"Cocina del norte (vasca/sidrería)", zone:"Salamanca (varias sedes)",
- highlight:"Institución madrileña del chef vasco David Lecanda — las flores de alcachofa originales desde hace décadas",
- desc:"Del restaurador vasco David Lecanda, con varios locales en Madrid. Línea de sidrería y asador vasco: flores de alcachofa confitadas (su plato insignia), rape sapito a la bilbaína, chuletas, bogavante con arroz de Calasparra. Raciones grandes pensadas para compartir."},
-{cat:"Regional", name:"Adela Besteiro", price:"$$$", cuisine:"Asturiana", zone:"Lavapiés/Antón Martín (Magdalena)",
- highlight:"La 'reina de la cocina asturiana' en Madrid abre su propio restaurante tras 4 décadas de oficio",
- desc:"De la cocinera Adela Besteiro, leyenda de la restauración madrileña (dos décadas al frente de Casa Hortensia). Fabada asturiana, almejas a la marinera, chuletitas de cordero, arroz con leche y su célebre tortilla de Hortensia (tomate, bonito, cebolla y muchos huevos). Trato familiar, raciones contundentes."},
-{cat:"Regional", name:"Asador Pelotari", price:"$$$", cuisine:"Vasco-navarra", zone:"Salamanca",
- highlight:"Más de 20 años de cocina vasco-navarra de producto en el corazón del barrio de Salamanca",
- desc:"Restaurante con larga trayectoria especializado en sacar el máximo partido a los productos de mercado, con raíces vasco-navarras."},
-{cat:"Regional", name:"Taberna Garelos", price:"$$$", cuisine:"Gallega tradicional y casera", zone:"Chamberí / varias sedes",
- highlight:"Cocina gallega tradicional y casera, con varias sedes por Madrid incluida Galería Canalejas",
- desc:"Del cocinero Antonio Couceiro (ex El Refugio de Oleiros, A Coruña, y La Penela, Madrid). Tortilla de Betanzos, empanada gallega, marisco y tarta de queso. Varias sedes: Chamberí, Galería Canalejas y calle del Españoleto."},
-
-/* ===== Añadidos a petición del usuario (ronda extra) ===== */
-{cat:"Regional", name:"Alabaster", price:"$$$$", cuisine:"Atlántica/gallega de temporada", zone:"Retiro (Calle Montalbán, 9)",
- highlight:"Sucursal madrileña del estrellado Alborada de A Coruña — bodega de más de 600 referencias y el mejor producto gallego junto al Retiro",
- desc:"Del grupo gallego Amicalia Alborada Hostelería, trae a Madrid la filosofía del laureado Alborada coruñés, con Óscar Marcos al frente de sala y bodega. Cocina atlántica de temporada que combina tradición y vanguardia: zamburiñas a la brasa con tuétano, raviolis de cocido gallego, merluza de pincho con pil-pil de limón, y un steak tartar de rubia gallega preparado en mesa. Dos comedores, gastrobar de mesas altas y dos privados para hasta 18 personas cada uno — ideal también para comidas de empresa. Bodega con más de 1.000 referencias."},
-{cat:"De Mercado", name:"Barrutia y el 9", price:"$$$", cuisine:"Taberna tradicional, vasco-madrileña", zone:"Justicia (Calle Santa Teresa, 9)",
- highlight:"Taberna centenaria (desde 1898) con alma vasca — tortilla de patatas a la trufa de culto y Luis Barrutia recomendando mesa por mesa",
- desc:"Taberna con más de un siglo de historia en el barrio de Justicia, hoy bajo la batuta de Luis Barrutia ('madrileño en la vida y vasco en los fogones'). Cocina tradicional con toque personal: tortilla de patatas a la trufa (su plato más pedido), callos, torreznos, gazpacho de remolacha, cachopitos de steak. Ambiente familiar y cercano, premiada por su bechamel; conviene reservar porque el local es pequeño y siempre está lleno."},
-{cat:"De Mercado", name:"Cuenllas", price:"$$$$", cuisine:"De mercado, tapas y conservas gourmet", zone:"Moncloa-Aravaca (Ferraz)",
- highlight:"Tradición y calidad desde 1939 — una de las mejores cartas de vino de Madrid junto a Plaza de España",
- desc:"Taberna gourmet histórica de Madrid, abierta desde 1939 cerca de Plaza de España. Carta de conservas, canapés, picoteo frío y platos clásicos como los callos a la madrileña, el arroz cremoso de trufa y setas, o el salteado de judías verdes con foie fresco. Salones privados disponibles; muy valorada por su extensa bodega y su trato de toda la vida."},
-{cat:"De Mercado", name:"Caja de Cerillas", price:"$$$", cuisine:"Casa de comidas, cocina tradicional española", zone:"Chamberí (Donoso Cortés)",
- highlight:"Casa de comidas en miniatura en Chamberí — del Hermano Vinagre Enrique Valentí, con huevos rotos estrellados de culto y solo 8 mesas",
- desc:"De Enrique Valentí (uno de los Hermanos Vinagre, con más de dos décadas de oficio en Barcelona), su primer proyecto en solitario en Madrid. Local minúsculo de apenas 8 mesas en Donoso Cortés, con alma de casa de comidas y ambiente vintage de tasca moderna, sin modas ni influencias foráneas. Carta corta de sabores reconocibles: huevos estrellados que revuelven en la mesa con gambas al ajillo, judías blancas con almejas, langostinos en gabardina, pollo frito al Jerez, y un flan de textura célebre. Reserva muy disputada desde su apertura; conviene pedirla con antelación."},
-{cat:"Japonesa", name:"Alfonsino", price:"$$$", cuisine:"Japonesa, barra de sushi tachinomi (de pie)", zone:"Chamberí (Cardenal Cisneros)",
- highlight:"Barra de sushi de pie, sin sillas ni reservas — el nuevo tachinomi de los creadores de Mateo Honten, puro ambiente japonés trasplantado a Chamberí",
- desc:"De Edo \"Kobayashi\" López (tijuanense de ascendencia nipona, creador también de Mateo Honten) junto a Picho Toledano. Apuesta por el concepto tachinomi: una barra para 15 comensales de pie, sin sillas ni reservas, donde se come con las manos en mesas altas. Nigiris y hand rolls regados con sake en lata, en un formato que despoja al sushi de cualquier ceremonia sin perder calidad. Pensado para ir, socializar con desconocidos en la barra y mantener la conversación fluida — pura cultura de barra japonesa trasladada a Madrid."}
-];
-
-/* ============ COORDENADAS APROXIMADAS (por zona/calle) ============ */
-const RESTAURANT_COORDS = {
-  "DiverXO": [40.46259, -3.68906],
-  "StreetXO": [40.42949, -3.69],
-  "RavioXO": [40.45785, -3.68783],
-  "Smoked Room": [40.45725, -3.68921],
-  "Coque": [40.43639, -3.70117],
-  "Horcher": [40.41667, -3.6808],
-  "Zalacaín": [40.44805, -3.67635],
-  "Saddle": [40.43392, -3.68512],
-  "DSTAGE": [40.42592, -3.69992],
-  "Estimar": [40.41261, -3.69804],
-  "A'Barra": [40.41716, -3.69611],
-  "Tse Yang": [40.42857, -3.68691],
-  "Sacha": [40.45611, -3.68192],
-  "Leña": [40.41964, -3.70117],
-  "Bibo": [40.41627, -3.70059],
-  "Lobito de Mar": [40.4259, -3.6776],
-  "Fismuler": [40.42876, -3.69961],
-  "La Ancha": [40.43058, -3.6809],
-  "Lakasa": [40.43612, -3.70495],
-  "Fokacha": [40.43657, -3.69931],
-  "Filandón": [40.50559, -3.77109],
-  "Desde 1911": [40.4239, -3.70545],
-  "La Buena Vida": [40.42387, -3.69388],
-  "El Pescador": [40.42385, -3.67756],
-  "O'Pazo": [40.43679, -3.70491],
-  "El Paraguas": [40.42387, -3.6814],
-  "Quintín (Ultramarinos Quintín)": [40.42699, -3.67964],
-  "Barracuda Mx": [40.41338, -3.68723],
-  "Carbón Negro (hoy Carbón)": [40.42815, -3.68355],
-  "Luzi Bombón": [40.4349, -3.69764],
-  "Maruca (La Maruca)": [40.42623, -3.68428],
-  "La Primera": [40.41873, -3.70142],
-  "Gran Café Sandanter": [40.42701, -3.69339],
-  "La Bien Aparecida": [40.41959, -3.70505],
-  "Charrúa": [40.42311, -3.69462],
-  "El Qüenco de Pepa": [40.46121, -3.69184],
-  "Lana": [40.43719, -3.69913],
-  "Casa Dani": [40.43151, -3.68188],
-  "La Tasquita de Enfrente": [40.42217, -3.69927],
-  "Triciclo": [40.41647, -3.69474],
-  "Bascoat": [40.45042, -3.68381],
-  "Treze": [40.42603, -3.6766],
-  "La Parra": [40.43976, -3.6993],
-  "Roostiq": [40.42174, -3.70098],
-  "Cilindro": [40.42743, -3.67753],
-  "Ronda 14": [40.43271, -3.6862],
-  "Taberna Pedraza": [40.41178, -3.67109],
-  "Taberna Laredo": [40.4115, -3.675],
-  "Ovillo": [40.44745, -3.67384],
-  "Arzábal": [40.4175, -3.6846],
-  "Piantao": [40.41974, -3.70301],
-  "El Señor Martín": [40.43756, -3.69366],
-  "Kappo Sushi": [40.43877, -3.70451],
-  "Pilar Akaneya": [40.44741, -3.69972],
-  "Don Lay": [40.42568, -3.68041],
-  "Royal Crown (China Crown)": [40.41895, -3.70521],
-  "Soy Kitchen": [40.43256, -3.69019],
-  "Sushi 99 (99 Sushi Bar)": [40.41838, -3.70523],
-  "Nakeima": [40.42646, -3.71812],
-  "Kabuki": [40.42903, -3.68633],
-  "Ikigai": [40.42166, -3.70623],
-  "Amazónico": [40.42305, -3.68285],
-  "Aarde": [40.4191, -3.69185],
-  "Ten con Ten": [40.42559, -3.67983],
-  "Salvaje": [40.42782, -3.68346],
-  "La Fonda Lironda (hoy La Fonda Bistró)": [40.42776, -3.69229],
-  "Pólvora": [40.42941, -3.68462],
-  "Fanático": [40.41844, -3.70054],
-  "Sinsombrero": [40.41721, -3.70661],
-  "Deessa": [40.4142, -3.69215],
-  "OSA": [40.39555, -3.72973],
-  "EMi": [40.43752, -3.69868],
-  "Paco Roncero (Paco Roncero Restaurante)": [40.41425, -3.7018],
-  "Montia": [40.58698, -4.15067],
-  "Gaytán": [40.42536, -3.68061],
-  "El Invernadero": [40.4406, -3.69994],
-  "Cebo": [40.41745, -3.69682],
-  "Pipilacha": [40.38998, -3.69804],
-  "Clos Madrid": [40.44843, -3.70201],
-  "Bistronómika": [40.41314, -3.67396],
-  "La Tasquería": [40.4426, -3.70418],
-  "La Barra de la Tasquería": [40.42321, -3.67777],
-  "Azahara": [40.42794, -3.67979],
-  "Rural": [40.41308, -3.69151],
-  "Los 33": [40.42683, -3.69326],
-  "Rafa": [40.42227, -3.67886],
-  "Raza Madrid": [40.42491, -3.69511],
-  "Casa Julián de Tolosa": [40.41233, -3.67527],
-  "La Bistroteca": [40.41484, -3.70611],
-  "La Vaca Argentina": [40.41611, -3.70159],
-  "Corral de la Morería (Restaurante Gastronómico)": [40.41131, -3.71115],
-  "Èter": [40.41778, -3.70084],
-  "VelascoAbellà": [40.45292, -3.68053],
-  "Ancestral": [40.43693, -3.77839],
-  "Casa José": [40.03231, -3.60381],
-  "Chispa Bistró": [40.42445, -3.69472],
-  "Pabú": [40.41802, -3.70173],
-  "Tres por Cuatro": [40.42869, -3.6755],
-  "Flor": [40.39084, -3.69201],
-  "Amós": [40.43298, -3.68773],
-  "Tetsu": [40.42832, -3.68311],
-  "Santerra": [40.41476, -3.70689],
-  "Mudrá": [40.42122, -3.69291],
-  "Playing Solo": [40.42233, -3.7013],
-  "HERmosilla": [40.42717, -3.68188],
-  "Bichopalo": [40.43998, -3.70414],
-  "MO de Movimiento": [40.44827, -3.6891],
-  "Verdejo Restaurante y Tabanco": [40.43038, -3.67626],
-  "AskuaBarra": [40.41761, -3.69431],
-  "La Montería": [40.41303, -3.68101],
-  "Quinqué": [40.45352, -3.68333],
-  "Marcano (Taberna Marcano)": [40.41916, -3.67317],
-  "La Castela": [40.42181, -3.67557],
-  "Castelados": [40.4193, -3.67289],
-  "Rocacho": [40.46442, -3.69298],
-  "ita": [40.42983, -3.67714],
-  "Angelita Madrid": [40.41791, -3.70483],
-  "Brutalista": [40.43787, -3.71758],
-  "Toga": [40.40955, -3.70472],
-  "Toguita": [40.40794, -3.70532],
-  "Marzeah Taberna": [40.45594, -3.68894],
-  "Sala de Despiece": [40.44218, -3.70577],
-  "Marmitón Bistró": [40.41356, -3.71033],
-  "Casa Mortero": [40.41557, -3.70622],
-  "Haranita": [40.41957, -3.70078],
-  "Dispatch": [40.43612, -3.70058],
-  "Sushi Bar Hannah": [40.43179, -3.68471],
-  "Toki": [40.42732, -3.69793],
-  "Kyoshi": [40.41277, -3.69537],
-  "Ebisu by Kobos": [40.40935, -3.71289],
-  "Saisho": [40.43778, -3.72192],
-  "Sen Omakase": [40.45536, -3.6793],
-  "Zuara Sushi": [40.41661, -3.70155],
-  "Ta-Kumi": [40.43076, -3.68585],
-  "MYO Hand Roll Bar": [40.43507, -3.69809],
-  "Mateo Honten": [40.42447, -3.70171],
-  "Saku Izakaya": [40.43204, -3.7044],
-  "Izariya": [40.43306, -3.69367],
-  "Ramen Kotsu x Kotsu": [40.42943, -3.70254],
-  "Ugo Chan": [40.45149, -3.6844],
-  "Kuoco": [40.42162, -3.69958],
-  "Osaka Nikkei": [40.44759, -3.69155],
-  "Llama Inn": [40.4235, -3.69395],
-  "Bao Li": [40.41962, -3.7021],
-  "Benares": [40.43515, -3.69116],
-  "Le Bistroman Atelier": [40.41579, -3.71129],
-  "Manifesto 13": [40.43447, -3.70475],
-  "Doppelgänger": [40.41047, -3.69791],
-  "La Piperna": [40.46122, -3.69678],
-  "Chiribita Tacos": [40.45493, -3.6859],
-  "Tampu": [40.42207, -3.69811],
-  "Tripea": [40.43636, -3.70244],
-  "Tandoori Station": [40.43335, -3.6792],
-  "Bakan": [40.41683, -3.70707],
-  "Quispe": [40.4133, -3.68091],
-  "Parking Pizza": [40.41837, -3.70685],
-  "El Gioviale": [40.41557, -3.6765],
-  "El Pedrusco de Aldealcorvo": [40.43528, -3.70266],
-  "La Manduca de Azagra": [40.43162, -3.70117],
-  "La Catapa": [40.41928, -3.67117],
-  "Arima": [40.44124, -3.70176],
-  "Agárimo": [40.44296, -3.70359],
-  "O'Grelo": [40.41458, -3.70511],
-  "Vinoteca García de la Navarra": [40.4169, -3.69189],
-  "Cañadío": [40.42882, -3.67482],
-  "La Cocina de Frente": [40.41541, -3.67679],
-  "Surtopía": [40.42819, -3.67984],
-  "El Pimiento Verde": [40.42408, -3.68095],
-  "Adela Besteiro": [40.4102, -3.70475],
-  "Asador Pelotari": [40.42869, -3.6789],
-  "Taberna Garelos": [40.43968, -3.69961],
-  "Alabaster": [40.41478, -3.68829],
-  "Barrutia y el 9": [40.42634, -3.69585],
-  "Cuenllas": [40.42413, -3.71498],
-  "Caja de Cerillas": [40.43568, -3.70486],
-  "Alfonsino": [40.42938, -3.70423],
-};
 
 /* ============ STATE ============ */
 let data = [];
 let editingId = null;
 let deletingId = null;
 
-function loadData(){
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if(stored){
-    try{ data = JSON.parse(stored); return; }catch(e){}
-  }
-  data = seedData.map((d,i)=>({...d, id:'r'+i+'_'+Date.now(), open:false}));
-  saveData();
+async function fetchRestaurants(){
+  const response = await fetch('/api/restaurants');
+  if(!response.ok) throw new Error('No se pudo cargar la lista (HTTP ' + response.status + ')');
+  return response.json();
 }
-function saveData(){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  if(typeof refreshMapMarkers === 'function' && typeof mapInitialized !== 'undefined' && mapInitialized){
-    refreshMapMarkers();
-  }
+
+function editorAuthHeaders(){
+  const creds = sessionStorage.getItem(EDITOR_SESSION_KEY + '_creds') || '';
+  return creds ? { 'Authorization': 'Basic ' + creds } : {};
 }
 
 /* ============ MAPS HELPERS ============ */
@@ -1454,8 +734,10 @@ function gmapsUrl(name){
   const q = encodeURIComponent(name + ', Madrid');
   return `https://www.google.com/maps/search/?api=1&query=${q}`;
 }
-function coordsFor(name){
-  return RESTAURANT_COORDS[name] || [40.4168, -3.7038];
+function coordsFor(d){
+  const lat = typeof d.lat === 'number' ? d.lat : 40.4168;
+  const lng = typeof d.lng === 'number' ? d.lng : -3.7038;
+  return [lat, lng];
 }
 
 /* ============ RENDER ============ */
@@ -1580,7 +862,6 @@ function attachCardEvents(){
     card.querySelector('[data-action="toggle"]').addEventListener('click', (e)=>{
       const d = data.find(x=>x.id===id);
       d.open = !d.open;
-      saveData();
       render();
     });
     const copyBtn = card.querySelector('[data-action="copy"]');
@@ -1727,7 +1008,7 @@ fCategory.addEventListener('change', ()=>{
   }
 });
 
-document.getElementById('formSave').addEventListener('click', ()=>{
+document.getElementById('formSave').addEventListener('click', async ()=>{
   const name = fName.value.trim();
   if(!name){
     fName.focus();
@@ -1748,15 +1029,46 @@ document.getElementById('formSave').addEventListener('click', ()=>{
     desc: fDescription.value.trim()
   };
 
-  if(editingId){
-    const d = data.find(x=>x.id===editingId);
-    Object.assign(d, payload);
-  } else {
-    data.unshift({...payload, id:'r_'+Date.now()+'_'+Math.random().toString(36).slice(2,7), open:true});
+  const saveBtn = document.getElementById('formSave');
+  const originalLabel = saveBtn.textContent;
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Guardando…';
+
+  try{
+    const headers = { 'Content-Type': 'application/json', ...editorAuthHeaders() };
+    let response;
+    if(editingId){
+      response = await fetch('/api/restaurants', {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ id: editingId, ...payload })
+      });
+    } else {
+      response = await fetch('/api/restaurants', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload)
+      });
+    }
+    if(!response.ok) throw new Error('HTTP ' + response.status);
+    const saved = await response.json();
+
+    if(editingId){
+      const idx = data.findIndex(x=>x.id===editingId);
+      if(idx > -1) data[idx] = { ...data[idx], ...saved };
+    } else {
+      data.unshift({ ...saved, open:true });
+    }
+    closeForm();
+    render();
+    if(typeof mapInitialized !== 'undefined' && mapInitialized) refreshMapMarkers();
+  }catch(err){
+    console.error(err);
+    alert('No se pudo guardar el restaurante. Comprueba tu conexión e inténtalo de nuevo.');
+  }finally{
+    saveBtn.disabled = false;
+    saveBtn.textContent = originalLabel;
   }
-  saveData();
-  closeForm();
-  render();
 });
 
 document.getElementById('formCancel').addEventListener('click', closeForm);
@@ -1782,13 +1094,30 @@ function closeDelete(){
 document.getElementById('deleteCancel').addEventListener('click', closeDelete);
 document.getElementById('deleteClose').addEventListener('click', closeDelete);
 deleteOverlay.addEventListener('click', (e)=>{ if(e.target===deleteOverlay) closeDelete(); });
-document.getElementById('deleteConfirm').addEventListener('click', ()=>{
-  if(deletingId){
-    data = data.filter(x=>x.id!==deletingId);
-    saveData();
+document.getElementById('deleteConfirm').addEventListener('click', async ()=>{
+  const id = deletingId;
+  if(!id){ closeDelete(); return; }
+  const delBtn = document.getElementById('deleteConfirm');
+  const originalLabel = delBtn.textContent;
+  delBtn.disabled = true;
+  delBtn.textContent = 'Eliminando…';
+  try{
+    const response = await fetch('/api/restaurants?id=' + encodeURIComponent(id), {
+      method: 'DELETE',
+      headers: editorAuthHeaders()
+    });
+    if(!response.ok) throw new Error('HTTP ' + response.status);
+    data = data.filter(x=>x.id!==id);
+    render();
+    if(typeof mapInitialized !== 'undefined' && mapInitialized) refreshMapMarkers();
+  }catch(err){
+    console.error(err);
+    alert('No se pudo eliminar el restaurante. Inténtalo de nuevo.');
+  }finally{
+    delBtn.disabled = false;
+    delBtn.textContent = originalLabel;
+    closeDelete();
   }
-  closeDelete();
-  render();
 });
 
 /* ============ EVENTS ============ */
@@ -1833,7 +1162,7 @@ function refreshMapMarkers(){
   mapMarkersLayer.clearLayers();
   const bounds = [];
   data.forEach(d=>{
-    const [lat, lng] = coordsFor(d.name);
+    const [lat, lng] = coordsFor(d);
     bounds.push([lat, lng]);
     const marker = L.marker([lat, lng]);
     const popupHtml = `
@@ -2080,8 +1409,34 @@ chatInput.addEventListener('keydown', (e)=>{
 });
 
 /* ============ INIT ============ */
-loadData();
-render();
+function renderLoadingState(){
+  mainContent.innerHTML = `
+    <div class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>Cargando restaurantes…</p>
+    </div>`;
+}
+function renderLoadError(){
+  mainContent.innerHTML = `
+    <div class="loading-state">
+      <p>No se pudo cargar la lista de restaurantes. Comprueba tu conexión e inténtalo de nuevo.</p>
+      <button class="btn btn-primary" id="retryLoadBtn">Reintentar</button>
+    </div>`;
+  const retryBtn = document.getElementById('retryLoadBtn');
+  if(retryBtn) retryBtn.addEventListener('click', initApp);
+}
+async function initApp(){
+  renderLoadingState();
+  try{
+    const fetched = await fetchRestaurants();
+    data = fetched.map(d=>({ ...d, open: d.open || false }));
+    render();
+  }catch(err){
+    console.error(err);
+    renderLoadError();
+  }
+}
+initApp();
 </script>
 </body>
 </html>
